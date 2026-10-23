@@ -1,4 +1,12 @@
-"""aiMontage real-video normalization helpers."""
+"""Pure helpers for normalizing upstream scene and sampled-frame results."""
+from __future__ import annotations
+
+from bisect import bisect_left
+from pathlib import Path
+from typing import Any
+
+from aimontage.evidence import sha256_file
+
 
 def nearest_frame_no(pts_times: list[float], target: float) -> tuple[int, float]:
     """Return nearest source frame and absolute time delta; ties prefer earlier frame."""
@@ -15,12 +23,9 @@ def scene_end_frame_no(pts_times: list[float], end_seconds: float) -> int:
     return min(bisect_left(pts_times, end_seconds), len(pts_times))
 
 
-def file_sha256(path: Path) -> str:
-    return sha256_file(path)
-
-
 def build_normalized_scenes(scene_result: dict[str, Any], pts_times: list[float],
                             source_sha256: str) -> list[dict[str, Any]]:
+    """Map scene detector times onto authoritative source PTS rows."""
     scenes = scene_result["data"].get("scenes", [])
     normalized = []
     for scene in scenes:
@@ -55,8 +60,10 @@ def build_normalized_scenes(scene_result: dict[str, Any], pts_times: list[float]
 
 def build_normalized_sampled_frames(frame_result: dict[str, Any], pts_times: list[float],
                                     source_sha256: str, output_dir: Path) -> list[dict[str, Any]]:
+    """Associate every extracted image with source SHA-256, frame number, and source PTS."""
     frames = frame_result["data"].get("frames", [])
     normalized = []
+    output_dir = output_dir.resolve()
     for item in frames:
         sample_time = float(item["timestamp_seconds"])
         frame_no, delta = nearest_frame_no(pts_times, sample_time)
@@ -76,7 +83,7 @@ def build_normalized_sampled_frames(frame_result: dict[str, Any], pts_times: lis
             "source_pts_time": pts_times[frame_no],
             "mapping_delta_seconds": round(delta, 6),
             "relative_path": relative_path,
-            "image_sha256": file_sha256(raw_path),
+            "image_sha256": sha256_file(raw_path),
             "source_sha256": source_sha256,
             "association_key": {"source_sha256": source_sha256, "frame_no": frame_no},
             "association_status": "aligned" if delta <= 0.5 / 30.0 + 1e-6 else "ambiguous-neighbor",
@@ -84,5 +91,3 @@ def build_normalized_sampled_frames(frame_result: dict[str, Any], pts_times: lis
     if any(item["association_status"] != "aligned" for item in normalized):
         raise RuntimeError("At least one sampled image could not be reliably associated to a source frame")
     return normalized
-
-
