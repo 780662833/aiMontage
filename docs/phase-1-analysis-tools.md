@@ -89,3 +89,49 @@ The output is explicitly labelled `source_preserving_vertical_transcode`; it doe
 ## Content anomaly review candidates
 
 After the profile-conformance render, `scripts/render_reconstruction_candidate.py` now runs `src/aimontage/ffmpeg_content_qa.py` and writes `content_qa.json`. The FFmpeg filters identify candidate intervals for black frames (`blackdetect`), visually frozen frames (`freezedetect`), and quiet audio (`silencedetect`). The report records thresholds, intervals, counts, and the exact command. These findings do not automatically fail the technical render gate: black frames may be intentional transitions, frozen frames may be deliberate holds, and silence can occur in valid audio. Human review remains mandatory. This is not yet a detector for clicks, clipping, or other audio artifacts.
+
+## Human acceptance procedure (required before creative reconstruction)
+
+CI success means that deterministic tests and the configured integration path ran successfully. It does not mean the creative result is approved. Perform this review on the uploaded `aimontage-real-video-e2e` artifact or on the same local run's output. Keep the source file immutable and record its SHA-256 with the review.
+
+### Gate A — source evidence integrity
+- Open the source video and sampled frames side by side. Check the first, middle, and last samples, then every sample used as evidence for a shot.
+- Verify each sample's `source_sha256`, `frame_no`, `source_pts_time`, relative image path, and image SHA refer to the expected source frame. A filename or visually similar frame alone is not proof of alignment.
+- Inspect every proposed shot boundary in context (at least 0.5 seconds before and after when available). Confirm that the boundary does not cut off an action or place a frame in the wrong shot.
+- If timing, ordering, or visual mapping is ambiguous, mark the gate as REVIEW/FAIL and fix the evidence mapping; do not compensate by editing the Blueprint.
+
+### Gate B — semantic and audio-content review
+- Review each shot against the source and confirm only visible/aurally supported facts: subject, action, object identity, composition, camera motion, and action outcome. Record unknowns as unknown.
+- Review the audio-content classification. For music-only media, do not accept ASR-generated words as subtitles. For speech, listen to the relevant segment and verify every accepted word and timestamp against the source.
+- Check `music_timeline_evidence.json` against the audio by listening around candidate transients and silence intervals. Energy transients are not automatically beats; VAD activity is not proof of speech.
+- Complete the visual review sidecar and rerun its validator. Do not proceed if any shot is unreviewed or the source hash differs.
+
+### Gate C — per-shot edit plan review
+Open `shot_edit_plan.json` and check every shot:
+- `source.start_frame_no` and `source.end_frame_no_exclusive` use the half-open interval convention; compare them with the source and evidence frames.
+- `source.start_seconds` / `source.end_seconds`, target duration, frame count, and order agree with the intended edit. Investigate rounding discrepancies rather than silently accepting them.
+- The subject remains fully visible. Keep `crop: null` unless a reviewed bounding box or explicit manual crop approval exists; confirm the declared contain/background-fill policy is visually acceptable.
+- Confirm hard cuts are acceptable at every boundary. Any transition, retiming, or reordered shot needs an explicit editorial decision and updated plan.
+- Confirm subtitles are disabled unless text and timing have been verified. Confirm the music policy, gain, fades, and whether the source track should remain continuous.
+- The generated plan is a draft: `acceptance.render_approved` must remain false until an authorized human approves the exact plan and source hash. Never change this flag merely to make a render command run.
+
+Record each shot as PASS, FAIL, or REVIEW with a short reason. Any FAIL blocks approval; REVIEW means the missing evidence or decision must be resolved before rendering.
+
+### Gate D — render and post-render content QA
+- First confirm the output file opens, has the declared dimensions and frame rate, has expected audio, and its duration is within the declared tolerance. Check `render_report.json` and `render_qa.json`.
+- Play the entire output once at normal speed with audio. Then inspect each detected black/freeze/silence interval with a few seconds of surrounding context. Intentional fades, still shots, and quiet passages may be valid; detections are review candidates, not automatic failures.
+- Listen with headphones to the beginning, end, every edit boundary, and any flagged interval. A peak near 0 dBFS is a clipping-risk warning, not proof of clipped samples; listen for clicks/pops/distortion and inspect the waveform or true-peak measurement when needed.
+- Check for subject cropping/deformation, unexpected blank bars/backgrounds, flashes, duplicated/frozen frames, abrupt audio cuts, lost key actions, subtitle errors, and pacing problems.
+- Keep automated technical QA and human content QA as separate results. Mark PASS only when both pass; document intentional exceptions with timestamps and reviewer notes.
+
+### Review record template
+Create a review record next to the artifacts with:
+- source SHA-256 and candidate/plan SHA-256;
+- reviewer and review date;
+- Gate A/B/C/D status (PASS / FAIL / REVIEW);
+- per-shot status and notes, including source and output timestamps for each issue;
+- accepted exceptions (for example, an intentional freeze or silent pause);
+- final decision: `APPROVED`, `REJECTED`, or `NEEDS_REVISION`.
+
+The current CI fixture contains sparse one-second image samples. Passing these gates does not establish complete motion coverage or prove AI-generated new actions/viewpoints. Motion-dense sampling and an editor-approved shot-assembly renderer remain separate work items.
+
