@@ -135,3 +135,28 @@ Create a review record next to the artifacts with:
 
 The current CI fixture contains sparse one-second image samples. Passing these gates does not establish complete motion coverage or prove AI-generated new actions/viewpoints. Motion-dense sampling and an editor-approved shot-assembly renderer remain separate work items.
 
+## Editor-approved shot assembly renderer (MVP)
+
+`scripts/render_edit_plan.py` now assembles actual source intervals in plan order and concatenates them with hard cuts. It preserves the source audio as a continuous track trimmed to the assembled video duration. This is genuine shot-level editing (trim + order + concatenate), but it does not generate new actions, synthesize camera viewpoints, implement crop/reframing, or burn subtitles. The renderer refuses aspect-ratio conversion, non-cut transitions, crop instructions, and enabled subtitles rather than silently ignoring them.
+
+The renderer is deliberately **not added as an automatically approved production step in CI**. The generated `shot_edit_plan.json` remains a draft. After a human has reviewed the exact source and every shot, make an explicit reviewed copy of the plan and set:
+- top-level `acceptance.editor_approved: true`;
+- top-level `acceptance.render_approved: true`;
+- top-level `acceptance.reviewer: "<reviewer identifier>"`;
+- every shot's `review_status: "APPROVED"`.
+
+These fields record an explicit decision; they are not proof that the review happened. Do not set them just to bypass the guard. The renderer also locks to the source SHA-256, validates half-open frame intervals and time intervals, and writes a provenance report with source/output hashes and the edit-plan hash.
+
+Example after manual approval:
+```powershell
+python scripts/render_edit_plan.py `
+  --video a.mp4 `
+  --plan artifacts/real_video_e2e/shot_edit_plan.approved.json `
+  --out artifacts/real_video_e2e/rendered/a_assembled.mp4 `
+  --report artifacts/real_video_e2e/edit_plan_render_report.json `
+  --qa artifacts/real_video_e2e/edit_plan_render_qa.json `
+  --content-qa artifacts/real_video_e2e/edit_plan_content_qa.json
+```
+
+Review the output in a media player and inspect all three JSON reports. The automated QA is technical; content QA remains a review-candidate list. The report's `creative_reconstruction_claimed` remains false because this renderer assembles existing source shots and does not recreate missing actions.
+
