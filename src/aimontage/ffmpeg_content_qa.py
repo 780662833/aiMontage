@@ -84,8 +84,8 @@ def analyze_content_anomalies(
             f"{result.stderr[-2000:]}"
         )
     detections = parse_detection_log(result.stderr)
-    peak_matches = re.findall(r"Peak level dB:\\s*(-?\\d+(?:\\.\\d+)?)", result.stderr)
-    peak_count_matches = re.findall(r"Peak count:\\s*(\\d+)", result.stderr)
+    peak_matches = re.findall(r"Peak level dB:\s*(-?\d+(?:\.\d+)?)", result.stderr)
+    peak_count_matches = re.findall(r"Peak count:\s*(\d+)", result.stderr)
     clipping = {
         "peak_level_db": max((float(v) for v in peak_matches), default=None),
         "peak_count": sum(int(v) for v in peak_count_matches) if peak_count_matches else None,
