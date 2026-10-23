@@ -1,4 +1,6 @@
-# Optional dependencies for the four analysis tool families.
+# Optional dependencies for upstream analysis tool families.
 scenedetect[opencv]>=0.6.4
 youtube-transcript-api>=1.0.0
 faster-whisper>=1.0.0
+# Keep PyAV new enough for faster-whisper's av.open(..., metadata_errors=...) call.
+av>=14.0.0
