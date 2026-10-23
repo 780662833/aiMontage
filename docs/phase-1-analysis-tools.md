@@ -30,6 +30,13 @@ python scripts/run_transcriber_e2e.py --video a.mp4 --out artifacts/real_video_e
 ### Real-video ASR finding (2026-10-23)
 The `tiny` model emitted “Thanks for watching!” on `a.mp4`, but the user confirmed that phrase is not present in the source audio. The first word had probability `0.01`, and there was a `2.88s` inter-word gap. This is a confirmed false positive: retain the raw ASR output for traceability, keep transcript QA at `REVIEW`, and do not pass this evidence bundle into Blueprint. A regression test locks this sample behind the gate. Do not relabel the clip as `NO_SPEECH` without an independent audio/speech check; The workflow now reruns ASR with `base` by default (or `small` via manual dispatch) and independently records WebRTC VAD activity intervals. VAD indicates speech-like acoustic activity only; it does not identify words or prove intelligible speech. Compare both results against the source audio before accepting any transcript.
 
+
+## Human-reviewed audio content classification
+The current `a.mp4` fixture has been reviewed by the user as background music only, with no spoken narration. The workflow writes `audio_content_review.json` through `scripts/write_audio_content_review.py` using the explicit `music_only` classification. This record is distinct from machine-inferred VAD or ASR results.
+
+For `music_only`, the policy is `NOT_APPLICABLE` for spoken transcript and ASR text is excluded from Blueprint even if an ASR model reports words. Raw ASR output remains available for audit. Music timing and acoustic features can still be analyzed independently; VAD activity must not be treated as proof of speech or as a music classifier.
+
+The deterministic policy and regression tests live in `src/aimontage/audio_review.py` and `tests/test_audio_review.py`. This reviewed label is specific to the current fixture; other videos should use their own reviewed classification rather than inherit it.
 ## YouTube caption fetch
 The upstream caption fetcher requires a YouTube URL/ID and network access; a local MP4 alone cannot exercise it. The workflow has an optional `workflow_dispatch` input `caption_video_url`. Leave it blank to skip the network test, or provide a known URL with accessible captions to run:
 
