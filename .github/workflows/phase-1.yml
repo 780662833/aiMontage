@@ -20,7 +20,9 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Verify FFmpeg is available on runner
+      - name: Set up FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+      - name: Verify FFmpeg
         run: |
           ffmpeg -version
           ffprobe -version
