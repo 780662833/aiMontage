@@ -52,6 +52,7 @@ def require_success(name: str, result: dict[str, Any]) -> dict[str, Any]:
 
 def run(video: Path, output_dir: Path, repo_root: Path) -> dict[str, Any]:
     video = video.resolve()
+    output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     if not video.is_file():
         raise FileNotFoundError(f"Real-video fixture not found: {video}")
