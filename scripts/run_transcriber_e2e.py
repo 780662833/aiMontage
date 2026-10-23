@@ -59,6 +59,7 @@ def main() -> int:
                    "transcript_quality_status": transcript_qa["status"], "blueprint_ready": transcript_qa["blueprint_ready"]},
         "normalized": normalized, "transcript_qa": transcript_qa, "evidence": evidence}
     write_json_atomic(output_dir / "transcription_evidence.json", bundle)
-    print(json.dumps({"status": "passed", "checks": bundle["checks"], "evidence_bundle": (output_dir / "transcription_evidence.json").as_posix()}, indent=2))
+    run_status = "passed" if transcript_qa["blueprint_ready"] else "review_required"
+    print(json.dumps({"status": run_status, "checks": bundle["checks"], "evidence_bundle": (output_dir / "transcription_evidence.json").as_posix()}, indent=2))
     return 0
 if __name__ == "__main__": raise SystemExit(main())
