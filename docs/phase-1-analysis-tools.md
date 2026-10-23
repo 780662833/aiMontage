@@ -21,11 +21,14 @@ The root `a.mp4` fixture is processed by `scripts/run_real_video_e2e.py`. It run
 The inspected run had 371 decoded source frames, three scene intervals, and 12 sampled images. All source frame rows passed timestamp audit; all sampled images visually covered the source from 0 through 11 seconds. Normalized association is separately unit-tested.
 
 ## Local transcription
-`scripts/run_transcriber_e2e.py` invokes the upstream local ASR tool with explicit model/language, validates segment and word timestamps against media duration, and records model settings plus raw output. CI uses `tiny` to bound runtime. An empty transcript is not a tool failure; it is recorded as `speech_detected: false` and should be reviewed against source audio.
+`scripts/run_transcriber_e2e.py` invokes the upstream local ASR tool with explicit model/language, validates segment and word timestamps against media duration, and records model settings plus raw output. CI uses `tiny` to bound runtime. An empty transcript is not a tool failure; it is recorded as `speech_detected: false` and should be reviewed against source audio. The CLI reports `review_required` when the transcript QA gate blocks Blueprint readiness; successful tool execution is not the same as accepted transcript content.
 
 ```powershell
 python scripts/run_transcriber_e2e.py --video a.mp4 --out artifacts/real_video_e2e/transcription --model-size tiny --language en
 ```
+
+### Real-video ASR finding (2026-10-23)
+The `tiny` model emitted “Thanks for watching!” on `a.mp4`, but the user confirmed that phrase is not present in the source audio. The first word had probability `0.01`, and there was a `2.88s` inter-word gap. This is a confirmed false positive: retain the raw ASR output for traceability, keep transcript QA at `REVIEW`, and do not pass this evidence bundle into Blueprint. A regression test locks this sample behind the gate. Do not relabel the clip as `NO_SPEECH` without an independent audio/speech check; first investigate with a stronger ASR model and/or a speech-activity detector, then compare against the source.
 
 ## YouTube caption fetch
 The upstream caption fetcher requires a YouTube URL/ID and network access; a local MP4 alone cannot exercise it. The workflow has an optional `workflow_dispatch` input `caption_video_url`. Leave it blank to skip the network test, or provide a known URL with accessible captions to run:
@@ -45,6 +48,7 @@ The fetch test preserves raw provider output and normalizes caption start/durati
 - [x] Scene candidates mapped to contiguous half-open source frame intervals.
 - [x] All 12 sampled images visually inspected and linked to frame number, source PTS, source hash, relative path, and image hash.
 - [x] Unit tests added for normalized frame association and scene mapping.
-- [ ] Controlled real-video Whisper transcription passes and audio presence is reviewed.
+- [x] Controlled real-video ASR executed and timestamp checks passed; content QA correctly blocked a user-confirmed hallucination (`REVIEW`, not Blueprint-ready).
+- [ ] Re-run with a stronger ASR model and independently verify speech activity/content against the source audio.
 - [ ] Live caption fetch passes with an explicit YouTube URL with accessible captions.
 - [ ] Evidence bundle accepted as Blueprint input after transcript and timestamp checks.
