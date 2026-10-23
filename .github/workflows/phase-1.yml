@@ -90,7 +90,7 @@ jobs:
         run: |
           python scripts/write_audio_content_review.py \
             --classification "${{ inputs.audio_content_type || 'music_only' }}" \
-            --reviewer-note "User reviewed source video: background music only; no spoken narration." \
+            --reviewer-note "Reviewed audio type selected for this run: ${{ inputs.audio_content_type || 'music_only' }}." \
             --transcription-bundle "artifacts/real_video_e2e/transcription-${{ inputs.asr_model_size || 'base' }}/transcription_evidence.json" \
             --out artifacts/real_video_e2e/audio_content_review.json
       - name: Run optional live YouTube caption-fetch check
