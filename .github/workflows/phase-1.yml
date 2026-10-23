@@ -74,6 +74,14 @@ jobs:
         run: |
           MODEL_SIZE="${{ inputs.asr_model_size || 'base' }}"
           python scripts/run_transcriber_e2e.py --video a.mp4 --out "artifacts/real_video_e2e/transcription-${MODEL_SIZE}" --model-size "$MODEL_SIZE" --language en
+      - name: Record reviewed audio content and gate transcript use
+        if: always()
+        run: |
+          python scripts/write_audio_content_review.py \
+            --classification music_only \
+            --reviewer-note "User reviewed source video: background music only; no spoken narration." \
+            --transcription-bundle "artifacts/real_video_e2e/transcription-${{ inputs.asr_model_size || 'base' }}/transcription_evidence.json" \
+            --out artifacts/real_video_e2e/audio_content_review.json
       - name: Run optional live YouTube caption-fetch check
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.caption_video_url != '' }}
         env:
