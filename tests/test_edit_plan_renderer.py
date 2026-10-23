@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from aimontage.edit_plan_renderer import validate_approved_edit_plan
+from aimontage.edit_plan_renderer import _validate_frame_time_alignment, validate_approved_edit_plan
 from aimontage.ffmpeg_renderer import RenderError
 
 
@@ -106,3 +106,22 @@ def test_approved_plan_renders_real_trim_with_ffmpeg(tmp_path: Path):
     assert report["audio_policy"] == "source_audio_cut_and_concatenated_per_shot"
     assert [shot["shot_id"] for shot in report["shots"]] == ["SHOT-LATE", "SHOT-EARLY"]
 
+
+
+
+def test_frame_time_alignment_rejects_seconds_frame_mismatch():
+    plan = _plan()["shots"]
+    with pytest.raises(RenderError, match="does not align"):
+        _validate_frame_time_alignment(plan, [i / 30 for i in range(90)])
+
+
+def test_frame_time_alignment_accepts_half_open_boundaries():
+    shot = _plan()["shots"][0]
+    _validate_frame_time_alignment([shot], [i / 30 for i in range(90)])
+
+
+def test_frame_time_alignment_rejects_out_of_range_end_frame():
+    shot = _plan()["shots"][0]
+    shot["source"]["end_frame_no_exclusive"] = 91
+    with pytest.raises(RenderError, match="exceeds decoded source frame count"):
+        _validate_frame_time_alignment([shot], [i / 30 for i in range(90)])
