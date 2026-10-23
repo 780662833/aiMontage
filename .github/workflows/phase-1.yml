@@ -110,7 +110,7 @@ jobs:
       - name: Build reviewable reconstruction Blueprint candidate
         run: python scripts/build_reconstruction_blueprint.py --blueprint artifacts/real_video_e2e/blueprint_draft.json --visual-review artifacts/real_video_e2e/visual_review_annotated.json --render-spec config/render_spec_social_9x16.json --out artifacts/real_video_e2e/reconstruction_blueprint_candidate.json
       - name: Render reviewed candidate and run technical output QA
-        run: python scripts/render_reconstruction_candidate.py --video a.mp4 --candidate artifacts/real_video_e2e/reconstruction_blueprint_candidate.json --render-spec config/render_spec_social_9x16.json --out artifacts/real_video_e2e/rendered/a_1080x1920.mp4 --report artifacts/real_video_e2e/render_report.json --qa artifacts/real_video_e2e/render_qa.json
+        run: python scripts/render_reconstruction_candidate.py --video a.mp4 --candidate artifacts/real_video_e2e/reconstruction_blueprint_candidate.json --render-spec config/render_spec_social_9x16.json --out artifacts/real_video_e2e/rendered/a_1080x1920.mp4 --report artifacts/real_video_e2e/render_report.json --qa artifacts/real_video_e2e/render_qa.json --content-qa artifacts/real_video_e2e/content_qa.json
       - name: Run optional live YouTube caption-fetch check
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.caption_video_url != '' }}
         env:
