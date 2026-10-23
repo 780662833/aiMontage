@@ -1,0 +1,4 @@
+# Optional dependencies for the four analysis tool families.
+scenedetect[opencv]>=0.6.4
+youtube-transcript-api>=1.0.0
+faster-whisper>=1.0.0
