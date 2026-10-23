@@ -14,6 +14,15 @@ on:
         required: false
         type: string
         default: ""
+      asr_model_size:
+        description: "Whisper model size for the real-video ASR check"
+        required: false
+        type: choice
+        options:
+          - tiny
+          - base
+          - small
+        default: base
 
 jobs:
   test:
@@ -27,7 +36,9 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Set up FFmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
       - name: Verify FFmpeg
         run: |
           ffmpeg -version
@@ -58,7 +69,9 @@ jobs:
       - name: Run controlled Whisper transcription on a.mp4
         env:
           HF_HOME: ${{ runner.temp }}/hf-cache
-        run: python scripts/run_transcriber_e2e.py --video a.mp4 --out artifacts/real_video_e2e/transcription --model-size tiny --language en
+        run: |
+          MODEL_SIZE="${{ inputs.asr_model_size || 'base' }}"
+          python scripts/run_transcriber_e2e.py --video a.mp4 --out "artifacts/real_video_e2e/transcription-${MODEL_SIZE}" --model-size "$MODEL_SIZE" --language en
       - name: Run optional live YouTube caption-fetch check
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.caption_video_url != '' }}
         env:
