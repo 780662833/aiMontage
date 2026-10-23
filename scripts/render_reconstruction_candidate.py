@@ -8,6 +8,7 @@ from pathlib import Path
 
 from aimontage.evidence import write_json_atomic
 from aimontage.ffmpeg_renderer import render_source_preserving
+from aimontage.ffmpeg_content_qa import analyze_content_anomalies
 from aimontage.render_qa import validate_render_report
 
 
@@ -22,19 +23,24 @@ def main() -> int:
     parser.add_argument("--render-spec", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True, help="Rendered MP4 path")
     parser.add_argument("--report", type=Path, required=True, help="Render provenance JSON")
-    parser.add_argument("--qa", type=Path, required=True, help="Post-render QA JSON")
+    parser.add_argument("--qa", type=Path, required=True, help="Post-render technical QA JSON")
+    parser.add_argument("--content-qa", type=Path, required=True, help="Black/freeze/silence review candidates JSON")
     args = parser.parse_args()
     spec = read_json(args.render_spec)
     report = render_source_preserving(args.video, args.out, read_json(args.candidate), spec)
     qa = validate_render_report(report, spec)
+    content_qa = analyze_content_anomalies(args.out)
     write_json_atomic(args.report, report)
     write_json_atomic(args.qa, qa)
+    write_json_atomic(args.content_qa, content_qa)
     print(json.dumps({
         "render_mode": report["render_mode"],
         "output": args.out.resolve().as_posix(),
         "output_sha256": report["output"]["sha256"],
         "qa_status": qa["status"],
         "manual_review_required": qa["manual_review_required"],
+        "content_review_required": content_qa["manual_review_required"],
+        "content_detection_counts": content_qa["detection_counts"],
         "errors": qa["errors"],
     }, ensure_ascii=False, indent=2))
     return 0 if qa["status"] == "PASS" else 2
