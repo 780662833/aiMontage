@@ -34,14 +34,14 @@ def parse_detection_log(stderr: str) -> dict[str, list[dict[str, float]]]:
             if name.endswith("_start"):
                 kind = name.removesuffix("_start")
                 open_start[kind] = value
-                break
+                continue
             if name in ("black_end", "freeze_end", "silence_end"):
                 kind = name.removesuffix("_end")
                 start = open_start[kind]
                 if start is not None:
                     events[kind].append({"start": start, "end": value, "duration": max(0.0, value - start)})
                     open_start[kind] = None
-                break
+                continue
             if name in ("freeze_duration", "silence_duration"):
                 kind = name.removesuffix("_duration")
                 start = open_start[kind]
