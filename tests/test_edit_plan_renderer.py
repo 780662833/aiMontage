@@ -111,6 +111,7 @@ def test_approved_plan_renders_real_trim_with_ffmpeg(tmp_path: Path):
 
 def test_frame_time_alignment_rejects_seconds_frame_mismatch():
     plan = _plan()["shots"]
+    plan[0]["source"]["start_seconds"] = 0.2
     with pytest.raises(RenderError, match="does not align"):
         _validate_frame_time_alignment(plan, [i / 30 for i in range(90)])
 
