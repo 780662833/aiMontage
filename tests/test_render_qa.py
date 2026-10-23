@@ -24,7 +24,9 @@ def test_render_qa_passes_target_profile():
 
 
 def test_render_qa_fails_wrong_dimensions_and_missing_audio():
-    report = _report(width=720, audio=False)\n    report["source"]["probe"]["streams"].append({"codec_type": "audio"})\n    result = validate_render_report(report, _spec())
+    report = _report(width=720, audio=False)
+    report["source"]["probe"]["streams"].append({"codec_type": "audio"})
+    result = validate_render_report(report, _spec())
     assert result["status"] == "FAIL"
     assert any("width" in error for error in result["errors"])
     assert any("audio" in error for error in result["errors"])
