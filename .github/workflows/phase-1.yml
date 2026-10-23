@@ -78,6 +78,8 @@ jobs:
         run: python scripts/run_real_video_e2e.py --video a.mp4 --out artifacts/real_video_e2e
       - name: Build deterministic music timeline evidence
         run: python scripts/run_music_timeline_e2e.py --video a.mp4 --out artifacts/real_video_e2e/music_timeline
+      - name: Build and validate cross-modal event timeline
+        run: python scripts/build_cross_modal_timeline.py --visual artifacts/real_video_e2e/evidence_bundle.json --music artifacts/real_video_e2e/music_timeline/music_timeline_evidence.json --out artifacts/real_video_e2e/cross_modal_timeline.json
       - name: Run independent WebRTC audio activity detection
         run: python scripts/run_audio_vad_e2e.py --video a.mp4 --out artifacts/real_video_e2e/audio_vad
       - name: Run controlled Whisper transcription on a.mp4
