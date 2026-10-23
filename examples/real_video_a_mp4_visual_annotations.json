@@ -1,0 +1,50 @@
+{
+  "schema_version": "aimontage.visual_annotations.v1",
+  "source_sha256": "c47cb72f6673402dbceec272530e7af8566db88c4f3905bb0d96046c4f297235",
+  "review_method": "manual_visual_review_of_timestamp_linked_sampled_frames",
+  "reviewer_note": "Annotations describe only visible sampled frames. Actions between samples and exact narrative motivation remain uncertain.",
+  "shots": [
+    {
+      "shot_id": "SHOT-001",
+      "evidence_frame_nos": [0, 30, 60, 90, 120, 150],
+      "visual_description": "Stylized 3D animated scene in a kitchen: a curly-haired woman in a light patterned top and a dark-curly-haired man wearing glasses and a blue hoodie stand behind a counter. The woman holds a peeled banana and progressively offers it toward the man; he smiles and gives a thumbs-up before looking toward the banana.",
+      "subject": "Two stylized 3D animated adults; woman with curly light-brown hair and patterned light top, man with dark curly hair, glasses, and blue hoodie; banana on the counter-side interaction axis.",
+      "action": "The woman presents a banana toward the man. The man first smiles and signals approval with a thumbs-up; later sampled frames show him looking toward the banana as it is held closer.",
+      "camera_motion": "The sampled frames retain a stable medium two-shot composition. No definite continuous camera movement is evident from the sampled frames; subtle motion between samples cannot be ruled out.",
+      "composition": "Vertical medium two-shot, both characters occupy the upper-middle of frame, kitchen cabinetry fills the background, and a broad counter forms the foreground.",
+      "lighting_and_color": "Soft, even indoor lighting; muted sage-green cabinetry, warm skin and hair tones, light patterned clothing, and a saturated blue hoodie.",
+      "edit_intent": "Likely establishes the characters and banana interaction before isolating the man's reaction in the following shot. This is an editorial interpretation, not a directly observable fact.",
+      "confidence": 0.88,
+      "review_status": "reviewed",
+      "annotator_note": "Observed in sampled frames 0, 30, 60, 90, 120, and 150. No speech is inferred from facial expressions."
+    },
+    {
+      "shot_id": "SHOT-002",
+      "evidence_frame_nos": [180, 210],
+      "visual_description": "A tighter close-up isolates the man in the blue hoodie and glasses holding or inspecting the peeled banana. His eyebrows are raised and his mouth is downturned, giving him a hesitant or uneasy expression.",
+      "subject": "The man with dark curly hair, round glasses, and blue hoodie; peeled banana in the lower foreground.",
+      "action": "He looks down toward the banana with a visibly uncertain expression. The exact thought or reason for the reaction is not observable.",
+      "camera_motion": "The shot is a close-up compared with the preceding medium two-shot. The sampled frames do not establish whether the close-up was achieved by a camera move or an edit to a different framing.",
+      "composition": "Tight facial close-up; the man's eyes and eyebrows dominate the frame, with the banana near the lower center.",
+      "lighting_and_color": "Soft even lighting, warm facial tones, blue hoodie, muted green background, and yellow banana peel.",
+      "edit_intent": "The tighter framing appears to emphasize the man's reaction to the banana. The intended joke or motivation is not confirmed by the visual evidence alone.",
+      "confidence": 0.84,
+      "review_status": "reviewed",
+      "annotator_note": "Based on sampled frames 180 and 210 only; avoid inferring dialogue or an unseen cause."
+    },
+    {
+      "shot_id": "SHOT-003",
+      "evidence_frame_nos": [240, 270, 300, 330],
+      "visual_description": "The view returns to a wider two-person composition. The banana rests on the counter. The woman raises an arm and smiles; the man raises a hand and then extends an arm outward toward the side of the frame.",
+      "subject": "Both animated adults behind the counter; banana visible on the counter in front of them.",
+      "action": "The woman raises her arm in a broad gesture while smiling. The man raises his hand and then extends his arm outward. The samples do not establish whether the gestures are a wave, farewell, explanation, or another action.",
+      "camera_motion": "The shot returns to a wider composition after the close-up. No definite continuous camera movement is evident from the sparse samples; the framing change is consistent with an edit.",
+      "composition": "Vertical medium-wide two-shot with more of the counter visible; the banana is a small foreground prop near the lower center.",
+      "lighting_and_color": "Consistent soft indoor light and muted green kitchen background; blue hoodie and light patterned top remain the strongest clothing colors.",
+      "edit_intent": "Likely provides a visual reaction or closing gesture after the close-up. The precise narrative resolution is ambiguous without denser temporal evidence or audio context.",
+      "confidence": 0.79,
+      "review_status": "reviewed",
+      "annotator_note": "Based on sampled frames 240, 270, 300, and 330. The gesture's exact meaning remains unknown."
+    }
+  ]
+}
