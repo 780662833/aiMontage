@@ -8,6 +8,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      caption_video_url:
+        description: "Optional YouTube URL/ID for live caption-fetch integration testing"
+        required: false
+        type: string
+        default: ""
 
 jobs:
   test:
@@ -49,11 +55,22 @@ jobs:
           PY
       - name: Run real-video analysis and verify timestamp-linked evidence
         run: python scripts/run_real_video_e2e.py --video a.mp4 --out artifacts/real_video_e2e
+      - name: Run controlled Whisper transcription on a.mp4
+        env:
+          HF_HOME: ${{ runner.temp }}/hf-cache
+        run: python scripts/run_transcriber_e2e.py --video a.mp4 --out artifacts/real_video_e2e/transcription --model-size tiny --language en
+      - name: Run optional live YouTube caption-fetch check
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.caption_video_url != '' }}
+        env:
+          CAPTION_VIDEO_URL: ${{ inputs.caption_video_url }}
+        run: python scripts/run_transcript_fetcher_smoke.py --url "$CAPTION_VIDEO_URL" --out artifacts/caption_fetch_e2e
       - name: Upload real-video evidence bundle
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: aimontage-real-video-e2e
-          path: artifacts/real_video_e2e/
+          path: |
+            artifacts/real_video_e2e/
+            artifacts/caption_fetch_e2e/
           if-no-files-found: warn
           retention-days: 14
