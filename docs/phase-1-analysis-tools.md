@@ -61,5 +61,14 @@ The fetch test preserves raw provider output and normalizes caption start/durati
 - [x] Added deterministic RMS/silence/energy-transient music timeline with unit tests.
 - [ ] Review threshold choices and inspect generated `music_timeline_evidence.json` for the real fixture.
 - [ ] Live caption fetch passes with an explicit YouTube URL with accessible captions.
-- [ ] Define and test the cross-modal event schema joining music timeline windows with visual scene/event intervals.
-- [ ] Validate a first aiMontage Blueprint against the evidence bundle and an explicit acceptance gate.
+- [x] Define and test `aimontage.cross_modal_timeline.v1`, joining visual scene intervals with candidate music-energy events and silence intervals; source SHA and duration alignment are enforced.
+- [x] Generate `aimontage.blueprint_draft.v1` with source-aligned half-open shot intervals, provenance references, and null semantic fields rather than guessed content.
+- [x] Validate Blueprint draft structure and enforce the music-only transcript exclusion gate in CI.
+- [x] Generate a visual review template that links each shot to sampled source frames and preserves source SHA, frame number, source PTS, image SHA, and relative path.
+- [x] Add evidence-backed visual annotation validation: annotations must cite frames linked to that shot, match the source SHA, include confidence, and pass contiguous time/frame checks.
+- [x] Manually review sampled frames for the fixed `a.mp4` fixture and add `examples/real_video_a_mp4_visual_annotations.json`. Uncertain intent and unobserved motion are explicitly qualified rather than asserted as facts.
+- [x] CI applies the fixture-specific annotation sidecar, writes `visual_review_annotated.json`, and requires every shot to pass the review gate.
+- [ ] Review threshold choices and inspect candidate music-energy transients against the source audio before treating any as beats.
+- [ ] Add dense motion/event sampling for actions that sparse 1-second samples may miss.
+- [ ] Define the target 9:16 output spec and add a separate creative edit-intent / render-plan acceptance gate.
+- [ ] Implement rendering and technical/content QA after semantic review and output-spec gates pass.
