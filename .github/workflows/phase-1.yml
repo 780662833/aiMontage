@@ -107,6 +107,8 @@ jobs:
         run: python scripts/apply_visual_annotations.py --template artifacts/real_video_e2e/visual_review_template.json --annotations examples/real_video_a_mp4_visual_annotations.json --out artifacts/real_video_e2e/visual_review_annotated.json
       - name: Validate visual annotations and require complete shot review
         run: python scripts/validate_visual_review.py --review artifacts/real_video_e2e/visual_review_annotated.json --out artifacts/real_video_e2e/visual_review_validation.json --require-complete
+      - name: Build reviewable reconstruction Blueprint candidate
+        run: python scripts/build_reconstruction_blueprint.py --blueprint artifacts/real_video_e2e/blueprint_draft.json --visual-review artifacts/real_video_e2e/visual_review_annotated.json --render-spec config/render_spec_social_9x16.json --out artifacts/real_video_e2e/reconstruction_blueprint_candidate.json
       - name: Run optional live YouTube caption-fetch check
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.caption_video_url != '' }}
         env:
