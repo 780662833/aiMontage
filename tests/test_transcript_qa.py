@@ -31,3 +31,19 @@ def test_no_speech_is_explicit_not_silent_success():
     result = assess_transcript_quality({"speech_detected": False, "word_timestamps": []})
     assert result["status"] == "NO_SPEECH"
     assert result["blueprint_ready"] is False
+
+def test_confirmed_false_positive_phrase_never_reaches_blueprint():
+    # Observed on the real a.mp4 fixture; the user confirmed this phrase is
+    # not present in the source audio. Keep it as a regression for the QA gate.
+    result = assess_transcript_quality({
+        "speech_detected": True,
+        "word_timestamps": [
+            {"text": "Thanks", "start_seconds": 0.0, "end_seconds": 1.58, "probability": 0.01},
+            {"text": "for", "start_seconds": 4.46, "end_seconds": 5.0, "probability": 0.908},
+            {"text": "watching!", "start_seconds": 5.0, "end_seconds": 5.16, "probability": 0.948},
+        ],
+    })
+    assert result["status"] == "REVIEW"
+    assert result["blueprint_ready"] is False
+    assert result["low_confidence_word_count"] == 1
+    assert result["large_interword_gap_count"] == 1
