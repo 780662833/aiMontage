@@ -78,7 +78,7 @@ def main() -> int:
     parser.add_argument("--video", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--interval-seconds", type=float, default=0.25)
-    parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--repo-root", type=Path, default=Path("vendor/OpenMontage"))
     args = parser.parse_args()
     print(json.dumps(run(args.video, args.out, args.repo_root, args.interval_seconds),
                      ensure_ascii=False, indent=2))
