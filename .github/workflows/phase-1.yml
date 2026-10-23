@@ -32,7 +32,7 @@ jobs:
         run: python -m pip install -r requirements-phase1.txt
       - name: Check environment
         run: python scripts/check_environment.py
-      - name: Test timestamp audit and evidence records
+      - name: Test timestamp audit, evidence, and source-frame mapping
         run: python -m pytest -q
       - name: Smoke-test upstream tool imports
         env:
@@ -47,7 +47,7 @@ jobs:
           classes = [AudioProbe, SceneDetect, FrameSampler, TranscriptFetcher, Transcriber]
           print("Imported upstream tools:", ", ".join(cls.name for cls in classes))
           PY
-      - name: Run real-video end-to-end analysis on a.mp4
+      - name: Run real-video analysis and verify timestamp-linked evidence
         run: python scripts/run_real_video_e2e.py --video a.mp4 --out artifacts/real_video_e2e
       - name: Upload real-video evidence bundle
         if: always()
