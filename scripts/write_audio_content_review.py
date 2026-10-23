@@ -16,7 +16,7 @@ def main() -> int:
     if args.transcription_bundle and args.transcription_bundle.is_file():
         transcription = json.loads(args.transcription_bundle.read_text(encoding="utf-8"))
     elif args.transcription_bundle:
-        raise FileNotFoundError(f"Transcription bundle not found: {args.transcription_bundle}")
+        print(f"Warning: transcription bundle unavailable; recording review without ASR evidence: {args.transcription_bundle}")
     review = build_audio_content_review(classification=args.classification, reviewer_note=args.reviewer_note, transcription_bundle=transcription)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(review, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
