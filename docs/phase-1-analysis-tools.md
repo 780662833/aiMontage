@@ -27,15 +27,38 @@
 - Timestamp/frame association audit must report `aligned`, `ambiguous-neighbor`, or `reorder`; suspicious ordering must not be silently corrected.
 - Keep raw tool output alongside normalized aiMontage records for traceability.
 
+## Real-video end-to-end check
+
+The committed `a.mp4` fixture is processed in CI by `scripts/run_real_video_e2e.py`. The check:
+
+1. Calculates the source SHA-256 and reads per-frame source timestamps using ffprobe.
+2. Audits frame order and timestamp completeness without sorting or silently repairing rows.
+3. Executes the pinned upstream `audio_probe`, `scene_detect`, and `frame_sampler` on the actual video.
+4. Saves each raw tool result in `artifacts/real_video_e2e/evidence_bundle.json`, together with source hash, pinned upstream revision, and timestamp audit.
+5. Fails if a tool reports failure, PTS is missing/reordered/ambiguous, or no sampled image is produced. CI uploads the evidence bundle and extracted frames as an artifact.
+
+Caption retrieval is intentionally not part of this local-file test because the upstream tool requires a YouTube URL and network access. Whisper transcription is not run by default because it may download a model and has a materially higher runtime; it should be tested separately with an explicitly selected model and cache policy.
+
+Run locally from the repository root:
+
+```powershell
+python -m pip install -e ".[test]"
+python -m pip install -r requirements-phase1.txt
+python scripts/check_environment.py
+python scripts/run_real_video_e2e.py --video a.mp4 --out artifacts/real_video_e2e
+python -m pytest -q
+```
+
 ## Initial verification checklist
 
-- [ ] Submodule resolves to the pinned revision.
-- [ ] FFmpeg/ffprobe availability is checked before media jobs.
-- [ ] Each tool has a thin invocation adapter and a documented input/output contract.
-- [ ] Caption fetching and local transcription are separate fallback paths.
-- [ ] Timestamp audit tests cover missing PTS, duplicate/nearby timestamps, and deliberate frame-row reorder.
-- [ ] Sample outputs can be traced to source video SHA-256 and source PTS.
+- [x] Submodule resolves to the pinned revision in CI.
+- [x] FFmpeg/ffprobe availability is checked before media jobs.
+- [x] Thin invocation adapters exist for the five upstream tools.
+- [x] Caption fetching and local transcription are separate fallback paths.
+- [x] Timestamp audit tests cover missing PTS, duplicate/nearby timestamps, and deliberate frame-row reorder.
+- [x] Real-video CI job runs media probe, scene detection, frame sampling, and source PTS audit on `a.mp4`.
+- [ ] Real-video run passes in CI and its evidence artifact is inspected.
 
 ## Status
 
-The pinned dependency and integration contract are being established first. Runtime adapters and end-to-end fixture tests are the next Phase 1 implementation items; no media job is claimed complete by this documentation commit.
+Unit tests, environment checks, and upstream import checks passed in a clean GitHub Actions runner before the real-video test was added. The new end-to-end step is the first actual execution of the three deterministic upstream analysis tools against the repository's `a.mp4` fixture; its status must be confirmed from the new CI run before claiming Phase 1 end-to-end validation.
