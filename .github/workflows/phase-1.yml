@@ -1,0 +1,47 @@
+name: Phase 1 integration checks
+
+on:
+  push:
+    branches:
+      - aimontage/phase-1-analysis-tools
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Install aiMontage test package
+        run: python -m pip install -e ".[test]"
+      - name: Install optional analysis adapters
+        run: python -m pip install -r requirements-phase1.txt
+      - name: Check environment
+        run: python scripts/check_environment.py
+      - name: Test timestamp audit and evidence records
+        run: python -m pytest -q
+      - name: Smoke-test upstream tool imports
+        env:
+          PYTHONPATH: vendor/OpenMontage
+        run: |
+          python - <<'PY'
+          from tools.analysis.audio_probe import AudioProbe
+          from tools.analysis.scene_detect import SceneDetect
+          from tools.analysis.frame_sampler import FrameSampler
+          from tools.analysis.transcript_fetcher import TranscriptFetcher
+          from tools.analysis.transcriber import Transcriber
+          classes = [AudioProbe, SceneDetect, FrameSampler, TranscriptFetcher, Transcriber]
+          print("Imported upstream tools:", ", ".join(cls.name for cls in classes))
+          PY
