@@ -71,8 +71,15 @@ The fetch test preserves raw provider output and normalizes caption start/durati
 - [x] Added `config/render_spec_social_9x16.json` and validation for a 1080×1920, 30 fps MP4 target, safe-area margins, audio policy, and crop review.
 - [x] Assemble a `reviewable_candidate` reconstruction Blueprint that merges the evidence-backed visual annotations and render spec while preserving frame provenance.
 - [ ] Motion-dense event sampling has not yet been validated; do not treat sparse 1-second samples as a complete action timeline.
-- [ ] No render has been produced yet; implement and test a deterministic FFmpeg render adapter plus post-render QA before declaring production readiness.
+- [x] Add deterministic FFmpeg profile-conformance render (`scripts/render_reconstruction_candidate.py`) with source-SHA lock, no-implicit-crop guard, target scaling/codec settings, provenance report, and technical output QA; CI renders the reviewed fixture. This is a source-preserving transcode smoke test, not a creative reconstruction.
 - [ ] Review threshold choices and inspect candidate music-energy transients against the source audio before treating any as beats.
 - [ ] Add dense motion/event sampling for actions that sparse 1-second samples may miss.
 - [ ] Define the target 9:16 output spec and add a separate creative edit-intent / render-plan acceptance gate.
-- [ ] Implement rendering and technical/content QA after semantic review and output-spec gates pass.
+- [ ] Extend render QA with automated black-frame/freeze/audio-glitch detection and human-reviewed visual/content acceptance. after semantic review and output-spec gates pass.
+
+
+## First deterministic render boundary
+
+The current render adapter is intentionally conservative. It checks that the input SHA-256 matches the reviewed candidate, probes the source with ffprobe, refuses aspect-ratio changes that would require an unreviewed crop/pad, then scales to the declared output profile and writes an MP4 plus provenance and QA JSON. The source fixture is already 9:16, so this validates the render path without inventing a reframing decision.
+
+The output is explicitly labelled `source_preserving_vertical_transcode`; it does **not** claim to recreate the storyboard or edit intent. Technical QA checks dimensions, frame rate, duration drift, and expected audio presence. Human review remains required for visual integrity, black frames/freezes, audio quality, pacing, and creative correctness. A later renderer must consume explicit per-shot edit instructions before it can be treated as reconstruction.
