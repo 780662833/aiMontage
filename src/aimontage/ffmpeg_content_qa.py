@@ -72,7 +72,7 @@ def analyze_content_anomalies(
         f"blackdetect=d={black_min_duration}:pix_th=0.10,"
         f"freezedetect=n=-60dB:d={freeze_min_duration}"
     )
-    af = f"silencedetect=n=-50dB:d={silence_min_duration}"
+    af = f"silencedetect=n=-50dB:d={silence_min_duration},astats=metadata=0:reset=0"
     command = [
         ffmpeg, "-hide_banner", "-nostats", "-i", str(path),
         "-vf", vf, "-af", af, "-f", "null", "-"
@@ -84,6 +84,14 @@ def analyze_content_anomalies(
             f"{result.stderr[-2000:]}"
         )
     detections = parse_detection_log(result.stderr)
+    peak_matches = re.findall(r"Peak level dB:\\s*(-?\\d+(?:\\.\\d+)?)", result.stderr)
+    peak_count_matches = re.findall(r"Peak count:\\s*(\\d+)", result.stderr)
+    clipping = {
+        "peak_level_db": max((float(v) for v in peak_matches), default=None),
+        "peak_count": sum(int(v) for v in peak_count_matches) if peak_count_matches else None,
+        "near_full_scale_candidate": any(float(v) >= -0.1 for v in peak_matches),
+        "interpretation": "Peak level near 0 dBFS is a clipping-risk candidate, not proof of clipped samples; listen and inspect waveform."
+    }
     return {
         "schema_version": "aimontage.content_qa.v1",
         "status": "REVIEW_REQUIRED",
@@ -95,6 +103,7 @@ def analyze_content_anomalies(
         },
         "detections": detections,
         "detection_counts": {key: len(value) for key, value in detections.items()},
+        "audio_peak_review": clipping,
         "interpretation": (
             "Detections are candidates for human review, not automatic defects. "
             "Intentional fades, dark scenes, still shots, and quiet musical passages may trigger filters."
