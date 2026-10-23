@@ -1,0 +1,116 @@
+name: Phase 1 integration checks
+
+on:
+  push:
+    branches:
+      - aimontage/phase-1-analysis-tools
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      caption_video_url:
+        description: "Optional YouTube URL/ID for live caption-fetch integration testing"
+        required: false
+        type: string
+        default: ""
+      asr_model_size:
+        description: "Whisper model size for the real-video ASR check"
+        required: false
+        type: choice
+        options:
+          - tiny
+          - base
+          - small
+        default: base
+      audio_content_type:
+        description: "Reviewed audio type for the current fixture; music-only skips ASR"
+        required: false
+        type: choice
+        options:
+          - music_only
+          - speech_only
+          - music_and_speech
+          - unknown
+        default: music_only
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Set up FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
+      - name: Verify FFmpeg
+        run: |
+          ffmpeg -version
+          ffprobe -version
+      - name: Install aiMontage test package
+        run: python -m pip install -e ".[test]"
+      - name: Install optional analysis adapters
+        run: python -m pip install -r requirements-phase1.txt
+      - name: Check environment
+        run: python scripts/check_environment.py
+      - name: Test timestamp audit, evidence, and source-frame mapping
+        run: python -m pytest -q
+      - name: Smoke-test upstream tool imports
+        env:
+          PYTHONPATH: vendor/OpenMontage
+        run: |
+          python - <<'PY'
+          from tools.analysis.audio_probe import AudioProbe
+          from tools.analysis.scene_detect import SceneDetect
+          from tools.analysis.frame_sampler import FrameSampler
+          from tools.analysis.transcript_fetcher import TranscriptFetcher
+          from tools.analysis.transcriber import Transcriber
+          classes = [AudioProbe, SceneDetect, FrameSampler, TranscriptFetcher, Transcriber]
+          print("Imported upstream tools:", ", ".join(cls.name for cls in classes))
+          PY
+      - name: Run real-video analysis and verify timestamp-linked evidence
+        run: python scripts/run_real_video_e2e.py --video a.mp4 --out artifacts/real_video_e2e
+      - name: Build deterministic music timeline evidence
+        run: python scripts/run_music_timeline_e2e.py --video a.mp4 --out artifacts/real_video_e2e/music_timeline
+      - name: Build and validate cross-modal event timeline
+        run: python scripts/build_cross_modal_timeline.py --visual artifacts/real_video_e2e/evidence_bundle.json --music artifacts/real_video_e2e/music_timeline/music_timeline_evidence.json --out artifacts/real_video_e2e/cross_modal_timeline.json
+      - name: Run independent WebRTC audio activity detection
+        run: python scripts/run_audio_vad_e2e.py --video a.mp4 --out artifacts/real_video_e2e/audio_vad
+      - name: Run controlled Whisper transcription on a.mp4
+        if: ${{ (inputs.audio_content_type || 'music_only') != 'music_only' }}
+        env:
+          HF_HOME: ${{ runner.temp }}/hf-cache
+        run: |
+          MODEL_SIZE="${{ inputs.asr_model_size || 'base' }}"
+          python scripts/run_transcriber_e2e.py --video a.mp4 --out "artifacts/real_video_e2e/transcription-${MODEL_SIZE}" --model-size "$MODEL_SIZE" --language en
+      - name: Record reviewed audio content and gate transcript use
+        if: always()
+        run: |
+          python scripts/write_audio_content_review.py \
+            --classification "${{ inputs.audio_content_type || 'music_only' }}" \
+            --reviewer-note "Reviewed audio type selected for this run: ${{ inputs.audio_content_type || 'music_only' }}." \
+            --transcription-bundle "artifacts/real_video_e2e/transcription-${{ inputs.asr_model_size || 'base' }}/transcription_evidence.json" \
+            --out artifacts/real_video_e2e/audio_content_review.json
+      - name: Build evidence-aligned Blueprint draft
+        run: python scripts/build_blueprint_draft.py --visual artifacts/real_video_e2e/evidence_bundle.json --timeline artifacts/real_video_e2e/cross_modal_timeline.json --audio-review artifacts/real_video_e2e/audio_content_review.json --out artifacts/real_video_e2e/blueprint_draft.json
+      - name: Run optional live YouTube caption-fetch check
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.caption_video_url != '' }}
+        env:
+          CAPTION_VIDEO_URL: ${{ inputs.caption_video_url }}
+        run: python scripts/run_transcript_fetcher_smoke.py --url "$CAPTION_VIDEO_URL" --out artifacts/caption_fetch_e2e
+      - name: Upload real-video evidence bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aimontage-real-video-e2e
+          path: |
+            artifacts/real_video_e2e/
+            artifacts/caption_fetch_e2e/
+          if-no-files-found: warn
+          retention-days: 14
