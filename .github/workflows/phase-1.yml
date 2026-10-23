@@ -66,6 +66,8 @@ jobs:
           PY
       - name: Run real-video analysis and verify timestamp-linked evidence
         run: python scripts/run_real_video_e2e.py --video a.mp4 --out artifacts/real_video_e2e
+      - name: Run independent WebRTC audio activity detection
+        run: python scripts/run_audio_vad_e2e.py --video a.mp4 --out artifacts/real_video_e2e/audio_vad
       - name: Run controlled Whisper transcription on a.mp4
         env:
           HF_HOME: ${{ runner.temp }}/hf-cache
