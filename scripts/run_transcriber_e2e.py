@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 from aimontage.evidence import make_evidence_record, sha256_file, write_json_atomic
 from aimontage.upstream import run_upstream_tool
+from aimontage.transcript_qa import assess_transcript_quality
 UPSTREAM_REVISION = "c8066452325cb57c8fc1ba8c2a71b6e8842e6b65"
 
 def normalize_transcript(raw: dict[str, Any], media_duration: float) -> dict[str, Any]:
@@ -47,14 +48,16 @@ def main() -> int:
     duration = float(json.loads(probe.stdout)["format"]["duration"])
     raw = run_upstream_tool("transcriber", {"input_path": str(video), "model_size": args.model_size, "language": args.language, "diarize": False, "output_dir": str(output_dir)}, repo_root=repo_root, timeout_seconds=900)
     normalized = normalize_transcript(raw, duration)
+    transcript_qa = assess_transcript_quality(normalized)
     evidence = make_evidence_record(evidence_id="real-a-mp4:local-asr", source_path=video, tool_name="OpenMontage.transcriber",
         tool_version=f"0.1.0+openmontage.{UPSTREAM_REVISION[:8]}", raw_result=raw)
     bundle = {"schema_version": "aimontage.transcription_e2e.v1",
         "fixture": {"path": video.name, "sha256": sha256_file(video), "upstream_revision": UPSTREAM_REVISION},
         "checks": {"transcriber_success": True, "segments_timestamp_valid": True, "words_timestamp_valid": True,
                    "speech_detected": normalized["speech_detected"], "segment_count": len(normalized["segments"]),
-                   "word_count": len(normalized["word_timestamps"]), "model_size": args.model_size, "language": args.language},
-        "normalized": normalized, "evidence": evidence}
+                   "word_count": len(normalized["word_timestamps"]), "model_size": args.model_size, "language": args.language,
+                   "transcript_quality_status": transcript_qa["status"], "blueprint_ready": transcript_qa["blueprint_ready"]},
+        "normalized": normalized, "transcript_qa": transcript_qa, "evidence": evidence}
     write_json_atomic(output_dir / "transcription_evidence.json", bundle)
     print(json.dumps({"status": "passed", "checks": bundle["checks"], "evidence_bundle": (output_dir / "transcription_evidence.json").as_posix()}, indent=2))
     return 0
