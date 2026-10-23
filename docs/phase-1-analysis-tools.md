@@ -15,6 +15,16 @@
 - Timestamp/frame association audit must report `aligned`, `ambiguous-neighbor`, or `reorder`; suspicious ordering must not be silently corrected.
 - Keep raw tool output alongside normalized aiMontage records.
 
+## Dense frame evidence for motion review
+
+`scripts/run_dense_frame_sampling.py` creates a separate `aimontage.dense_frame_evidence.v1` bundle using deterministic uniform sampling (default 0.25 seconds). Each extracted image is associated with the immutable source SHA-256, decoded frame number, authoritative source PTS, relative path, and image SHA-256. The Phase 1 CI runs this against the real `a.mp4` fixture and uploads the bundle with the other artifacts.
+
+Dense uniform sampling improves temporal coverage compared with 1-second sampling, but it is not optical-flow analysis and does not guarantee capture of every brief action. Treat the bundle as additional evidence for human review, not a complete action timeline or a motion detector.
+
+```powershell
+python scripts/run_dense_frame_sampling.py --video a.mp4 --out artifacts/dense_frames --interval-seconds 0.25
+```
+
 ## Real-video analysis
 The root `a.mp4` fixture is processed by `scripts/run_real_video_e2e.py`. It runs pinned upstream `audio_probe`, `scene_detect`, and `frame_sampler`, audits decoded source-frame PTS, maps scene boundaries to contiguous half-open source-frame intervals, and maps each sampled image to its source frame. Each normalized sample includes source SHA-256, source frame number, authoritative source PTS, relative POSIX path, image SHA-256, and mapping delta. Raw upstream output is preserved in parallel.
 
