@@ -68,6 +68,10 @@ The fetch test preserves raw provider output and normalizes caption start/durati
 - [x] Add evidence-backed visual annotation validation: annotations must cite frames linked to that shot, match the source SHA, include confidence, and pass contiguous time/frame checks.
 - [x] Manually review sampled frames for the fixed `a.mp4` fixture and add `examples/real_video_a_mp4_visual_annotations.json`. Uncertain intent and unobserved motion are explicitly qualified rather than asserted as facts.
 - [x] CI applies the fixture-specific annotation sidecar, writes `visual_review_annotated.json`, and requires every shot to pass the review gate.
+- [x] Added `config/render_spec_social_9x16.json` and validation for a 1080×1920, 30 fps MP4 target, safe-area margins, audio policy, and crop review.
+- [x] Assemble a `reviewable_candidate` reconstruction Blueprint that merges the evidence-backed visual annotations and render spec while preserving frame provenance.
+- [ ] Motion-dense event sampling has not yet been validated; do not treat sparse 1-second samples as a complete action timeline.
+- [ ] No render has been produced yet; implement and test a deterministic FFmpeg render adapter plus post-render QA before declaring production readiness.
 - [ ] Review threshold choices and inspect candidate music-energy transients against the source audio before treating any as beats.
 - [ ] Add dense motion/event sampling for actions that sparse 1-second samples may miss.
 - [ ] Define the target 9:16 output spec and add a separate creative edit-intent / render-plan acceptance gate.
