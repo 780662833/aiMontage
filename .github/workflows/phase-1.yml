@@ -103,6 +103,10 @@ jobs:
         run: python scripts/validate_blueprint_draft.py --blueprint artifacts/real_video_e2e/blueprint_draft.json --out artifacts/real_video_e2e/blueprint_validation.json
       - name: Build evidence-linked visual review template
         run: python scripts/build_visual_review_template.py --visual artifacts/real_video_e2e/evidence_bundle.json --blueprint artifacts/real_video_e2e/blueprint_draft.json --out artifacts/real_video_e2e/visual_review_template.json
+      - name: Apply evidence-reviewed sample annotations
+        run: python scripts/apply_visual_annotations.py --template artifacts/real_video_e2e/visual_review_template.json --annotations examples/real_video_a_mp4_visual_annotations.json --out artifacts/real_video_e2e/visual_review_annotated.json
+      - name: Validate visual annotations and require complete shot review
+        run: python scripts/validate_visual_review.py --review artifacts/real_video_e2e/visual_review_annotated.json --out artifacts/real_video_e2e/visual_review_validation.json --require-complete
       - name: Run optional live YouTube caption-fetch check
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.caption_video_url != '' }}
         env:
