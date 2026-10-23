@@ -31,6 +31,7 @@ def build_visual_review_template(
             "mapping_delta_seconds": frame.get("mapping_delta_seconds"),
             "relative_path": frame.get("relative_path"),
             "image_sha256": frame.get("image_sha256"),
+            "source_sha256": frame.get("source_sha256"),
             "association_key": frame.get("association_key"),
             "association_status": frame.get("association_status"),
         }
@@ -60,6 +61,7 @@ def build_visual_review_template(
                 "lighting_and_color": None,
                 "edit_intent": None,
                 "confidence": None,
+                "evidence_frame_nos": [],
                 "review_status": "not_reviewed",
                 "annotator_note": None,
             },
