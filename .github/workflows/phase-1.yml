@@ -20,10 +20,12 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - name: Install FFmpeg
+      - name: Set up FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+      - name: Verify FFmpeg
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          ffmpeg -version
+          ffprobe -version
       - name: Install aiMontage test package
         run: python -m pip install -e ".[test]"
       - name: Install optional analysis adapters
