@@ -75,7 +75,8 @@ The fetch test preserves raw provider output and normalizes caption start/durati
 - [ ] Review threshold choices and inspect candidate music-energy transients against the source audio before treating any as beats.
 - [ ] Add dense motion/event sampling for actions that sparse 1-second samples may miss.
 - [ ] Define the target 9:16 output spec and add a separate creative edit-intent / render-plan acceptance gate.
-- [ ] Extend render QA with automated black-frame/freeze/audio-glitch detection and human-reviewed visual/content acceptance. after semantic review and output-spec gates pass.
+- [x] Extend render QA with FFmpeg black-frame, freeze-frame, and silence detection candidates; detections remain review-only because intentional fades, static shots, and quiet music can trigger them.
+- [ ] Add audio glitch/pop detection beyond silence candidates and human-reviewed visual/content acceptance after semantic review and output-spec gates pass.
 
 
 ## First deterministic render boundary
@@ -83,3 +84,8 @@ The fetch test preserves raw provider output and normalizes caption start/durati
 The current render adapter is intentionally conservative. It checks that the input SHA-256 matches the reviewed candidate, probes the source with ffprobe, refuses aspect-ratio changes that would require an unreviewed crop/pad, then scales to the declared output profile and writes an MP4 plus provenance and QA JSON. The source fixture is already 9:16, so this validates the render path without inventing a reframing decision.
 
 The output is explicitly labelled `source_preserving_vertical_transcode`; it does **not** claim to recreate the storyboard or edit intent. Technical QA checks dimensions, frame rate, duration drift, and expected audio presence. Human review remains required for visual integrity, black frames/freezes, audio quality, pacing, and creative correctness. A later renderer must consume explicit per-shot edit instructions before it can be treated as reconstruction.
+
+
+## Content anomaly review candidates
+
+After the profile-conformance render, `scripts/render_reconstruction_candidate.py` now runs `src/aimontage/ffmpeg_content_qa.py` and writes `content_qa.json`. The FFmpeg filters identify candidate intervals for black frames (`blackdetect`), visually frozen frames (`freezedetect`), and quiet audio (`silencedetect`). The report records thresholds, intervals, counts, and the exact command. These findings do not automatically fail the technical render gate: black frames may be intentional transitions, frozen frames may be deliberate holds, and silence can occur in valid audio. Human review remains mandatory. This is not yet a detector for clicks, clipping, or other audio artifacts.
