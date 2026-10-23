@@ -23,6 +23,16 @@ on:
           - base
           - small
         default: base
+      audio_content_type:
+        description: "Reviewed audio type for the current fixture; music-only skips ASR"
+        required: false
+        type: choice
+        options:
+          - music_only
+          - speech_only
+          - music_and_speech
+          - unknown
+        default: music_only
 
 jobs:
   test:
@@ -69,6 +79,7 @@ jobs:
       - name: Run independent WebRTC audio activity detection
         run: python scripts/run_audio_vad_e2e.py --video a.mp4 --out artifacts/real_video_e2e/audio_vad
       - name: Run controlled Whisper transcription on a.mp4
+        if: ${{ (inputs.audio_content_type || 'music_only') != 'music_only' }}
         env:
           HF_HOME: ${{ runner.temp }}/hf-cache
         run: |
@@ -78,7 +89,7 @@ jobs:
         if: always()
         run: |
           python scripts/write_audio_content_review.py \
-            --classification music_only \
+            --classification "${{ inputs.audio_content_type || 'music_only' }}" \
             --reviewer-note "User reviewed source video: background music only; no spoken narration." \
             --transcription-bundle "artifacts/real_video_e2e/transcription-${{ inputs.asr_model_size || 'base' }}/transcription_evidence.json" \
             --out artifacts/real_video_e2e/audio_content_review.json
