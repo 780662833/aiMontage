@@ -28,7 +28,7 @@ python scripts/run_transcriber_e2e.py --video a.mp4 --out artifacts/real_video_e
 ```
 
 ### Real-video ASR finding (2026-10-23)
-The `tiny` model emitted “Thanks for watching!” on `a.mp4`, but the user confirmed that phrase is not present in the source audio. The first word had probability `0.01`, and there was a `2.88s` inter-word gap. This is a confirmed false positive: retain the raw ASR output for traceability, keep transcript QA at `REVIEW`, and do not pass this evidence bundle into Blueprint. A regression test locks this sample behind the gate. Do not relabel the clip as `NO_SPEECH` without an independent audio/speech check; The workflow now reruns ASR with `base` by default (or `small` via manual dispatch) and independently records WebRTC VAD activity intervals. VAD indicates speech-like acoustic activity only; it does not identify words or prove intelligible speech. Compare both results against the source audio before accepting any transcript.
+The `tiny` model emitted “Thanks for watching!” on `a.mp4`, but the user confirmed that phrase is not present in the source audio. The first word had probability `0.01`, and there was a `2.88s` inter-word gap. This is a confirmed false positive: retain the raw ASR output for traceability, keep transcript QA at `REVIEW`, and do not pass this evidence bundle into Blueprint. A regression test locks this sample behind the gate. The fixture is now explicitly reviewed as `music_only`, so normal Phase 1 CI skips ASR for this fixture. Manual dispatch can select `speech_only`, `music_and_speech`, or `unknown` to exercise the transcript workflow. VAD indicates speech-like acoustic activity only; it does not identify words or prove intelligible speech.
 
 
 ## Human-reviewed audio content classification
@@ -36,7 +36,7 @@ The current `a.mp4` fixture has been reviewed by the user as background music on
 
 For `music_only`, the policy is `NOT_APPLICABLE` for spoken transcript and ASR text is excluded from Blueprint even if an ASR model reports words. Raw ASR output remains available for audit. Music timing and acoustic features can still be analyzed independently; VAD activity must not be treated as proof of speech or as a music classifier.
 
-The deterministic policy and regression tests live in `src/aimontage/audio_review.py` and `tests/test_audio_review.py`. This reviewed label is specific to the current fixture; other videos should use their own reviewed classification rather than inherit it.
+The deterministic policy and regression tests live in `src/aimontage/audio_review.py` and `tests/test_audio_review.py`. This reviewed label is specific to the current fixture; other videos should use their own reviewed classification rather than inherit it. The workflow also runs `scripts/run_music_timeline_e2e.py`, which extracts mono signed 16-bit PCM through FFmpeg and writes `music_timeline_evidence.json`. `src/aimontage/music_timeline.py` computes a configurable RMS energy envelope, threshold-based silence intervals, and candidate energy transients. Candidate transients are not asserted to be musical beats, and the module does not classify music versus speech or infer tempo.
 ## YouTube caption fetch
 The upstream caption fetcher requires a YouTube URL/ID and network access; a local MP4 alone cannot exercise it. The workflow has an optional `workflow_dispatch` input `caption_video_url`. Leave it blank to skip the network test, or provide a known URL with accessible captions to run:
 
@@ -57,7 +57,9 @@ The fetch test preserves raw provider output and normalizes caption start/durati
 - [x] Unit tests added for normalized frame association and scene mapping.
 - [x] Controlled real-video ASR executed and timestamp checks passed; content QA correctly blocked a user-confirmed hallucination (`REVIEW`, not Blueprint-ready).
 - [x] Added configurable `tiny`/`base`/`small` ASR model selection; push CI defaults to `base`.
-- [x] Added independent WebRTC VAD activity evidence (`scripts/run_audio_vad_e2e.py`).
-- [ ] Review the new base-ASR and VAD artifacts against the source audio before accepting transcript content.
+- [x] Added independent WebRTC VAD activity evidence (`scripts/run_audio_vad_e2e.py`); interpretation is limited to speech-like activity.
+- [x] Added deterministic RMS/silence/energy-transient music timeline with unit tests.
+- [ ] Review threshold choices and inspect generated `music_timeline_evidence.json` for the real fixture.
 - [ ] Live caption fetch passes with an explicit YouTube URL with accessible captions.
-- [ ] Evidence bundle accepted as Blueprint input after transcript and timestamp checks.
+- [ ] Define and test the cross-modal event schema joining music timeline windows with visual scene/event intervals.
+- [ ] Validate a first aiMontage Blueprint against the evidence bundle and an explicit acceptance gate.
