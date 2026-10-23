@@ -1,0 +1,54 @@
+{
+  "schema_version": "aimontage.render_spec.v1",
+  "profile_id": "social_vertical_9x16_1080p30",
+  "purpose": "Reconstruction candidate target profile; does not itself trigger rendering.",
+  "output": {
+    "width": 1080,
+    "height": 1920,
+    "aspect_ratio": "9:16",
+    "fps": 30,
+    "container": "mp4",
+    "video_codec": "h264",
+    "audio_codec": "aac",
+    "audio_sample_rate_hz": 48000,
+    "duration_policy": "preserve_source",
+    "pixel_format": "yuv420p",
+    "video_bitrate_policy": "quality_based",
+    "color_range": "tv"
+  },
+  "fit_policy": {
+    "mode": "contain_then_review",
+    "allow_crop_without_subject_review": false,
+    "allow_nonuniform_scale": false,
+    "background_fill": "blurred_duplicate",
+    "subject_safe_crop_required": true
+  },
+  "safe_area": {
+    "top_pct": 8,
+    "right_pct": 7,
+    "bottom_pct": 14,
+    "left_pct": 7,
+    "note": "Conservative UI-safe area for social overlays; confirm against current platform UI before final delivery."
+  },
+  "subtitles": {
+    "burn_in": false,
+    "source": "none_until_verified",
+    "max_lines": 2,
+    "max_characters_per_line": 34,
+    "require_timing_review": true
+  },
+  "audio": {
+    "preserve_source_music": true,
+    "spoken_transcript_policy": "exclude_when_music_only",
+    "loudness_normalization": "defer_until_mix_qa"
+  },
+  "quality_gates": {
+    "verify_output_dimensions": true,
+    "verify_fps_and_duration": true,
+    "verify_audio_stream": true,
+    "black_frame_scan": true,
+    "freeze_frame_scan": true,
+    "subtitle_safe_area_scan": true,
+    "manual_visual_review_required": true
+  }
+}
