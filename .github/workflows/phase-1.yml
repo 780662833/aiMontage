@@ -97,6 +97,10 @@ jobs:
             --reviewer-note "Reviewed audio type selected for this run: ${{ inputs.audio_content_type || 'music_only' }}." \
             --transcription-bundle "artifacts/real_video_e2e/transcription-${{ inputs.asr_model_size || 'base' }}/transcription_evidence.json" \
             --out artifacts/real_video_e2e/audio_content_review.json
+      - name: Build evidence-aligned Blueprint draft
+        run: python scripts/build_blueprint_draft.py --visual artifacts/real_video_e2e/evidence_bundle.json --timeline artifacts/real_video_e2e/cross_modal_timeline.json --audio-review artifacts/real_video_e2e/audio_content_review.json --out artifacts/real_video_e2e/blueprint_draft.json
+      - name: Validate Blueprint draft structure and safety gates
+        run: python scripts/validate_blueprint_draft.py --blueprint artifacts/real_video_e2e/blueprint_draft.json --out artifacts/real_video_e2e/blueprint_validation.json
       - name: Run optional live YouTube caption-fetch check
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.caption_video_url != '' }}
         env:
