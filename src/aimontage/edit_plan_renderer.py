@@ -57,10 +57,74 @@ def validate_approved_edit_plan(source: Path, plan: dict[str, Any]) -> list[dict
     return validated
 
 
+def _probe_frame_pts(source: Path) -> list[float]:
+    """Return decoded source-frame PTS in decoder order, matching the plan's frame numbering."""
+    result = subprocess.run(
+        [
+            "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_frames",
+            "-show_entries", "frame=best_effort_timestamp_time,pts_time,pkt_pts_time",
+            "-of", "json", str(source),
+        ],
+        check=False, capture_output=True, text=True, timeout=120,
+    )
+    if result.returncode:
+        raise RenderError(f"ffprobe could not inspect source frame timestamps: {result.stderr[-2000:]}")
+    try:
+        payload = json.loads(result.stdout)
+        pts = []
+        for frame in payload.get("frames", []):
+            value = frame.get("best_effort_timestamp_time")
+            if value is None:
+                value = frame.get("pts_time")
+            if value is None:
+                value = frame.get("pkt_pts_time")
+            if value is None:
+                raise RenderError("source contains a decoded frame without a usable timestamp")
+            pts.append(float(value))
+    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        raise RenderError(f"could not parse source frame timestamps: {exc}") from exc
+    if not pts:
+        raise RenderError("source has no decoded video frames")
+    if any(right <= left for left, right in zip(pts, pts[1:])):
+        raise RenderError("source frame PTS are not strictly increasing; frame-index edit plan is unsafe")
+    return pts
+
+
+def _validate_frame_time_alignment(shots: list[dict[str, Any]], pts: list[float]) -> None:
+    """Require plan seconds to agree with decoded frame-index boundaries within one frame."""
+    for shot in shots:
+        src = shot["source"]
+        start_frame = int(src["start_frame_no"])
+        end_frame = int(src["end_frame_no_exclusive"])
+        if end_frame > len(pts):
+            raise RenderError(f"{shot.get('shot_id')} frame interval exceeds decoded source frame count")
+        start_time = float(src["start_seconds"])
+        end_time = float(src["end_seconds"])
+        start_delta = abs(start_time - pts[start_frame])
+        if start_delta > 0.05 + 1e-6:
+            raise RenderError(
+                f"{shot.get('shot_id')} start_seconds does not align with start_frame_no "
+                f"(delta={start_delta:.6f}s)"
+            )
+        # For a half-open end frame, compare against that frame's PTS; the final frame ends
+        # at the next nominal interval because no end-frame PTS exists at EOF.
+        if end_frame < len(pts):
+            end_delta = abs(end_time - pts[end_frame])
+            if end_delta > 0.05 + 1e-6:
+                raise RenderError(
+                    f"{shot.get('shot_id')} end_seconds does not align with end_frame_no_exclusive "
+                    f"(delta={end_delta:.6f}s)"
+                )
+        elif end_time + 0.05 < pts[-1]:
+            raise RenderError(f"{shot.get('shot_id')} end_seconds ends before the final source frame")
+
+
 def render_approved_edit_plan(source: Path, output: Path, plan: dict[str, Any]) -> dict[str, Any]:
     """Cut matching source intervals from video/audio and concatenate them in plan order."""
     shots = validate_approved_edit_plan(source, plan)
     source_probe = probe_media(source)
+    frame_pts = _probe_frame_pts(source)
+    _validate_frame_time_alignment(shots, frame_pts)
     streams = source_probe.get("streams", [])
     video = next((s for s in streams if s.get("codec_type") == "video"), None)
     if video is None:
