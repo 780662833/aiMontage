@@ -2,5 +2,5 @@
 scenedetect[opencv]>=0.6.4
 youtube-transcript-api>=1.0.0
 faster-whisper>=1.0.0
-# Keep PyAV new enough for faster-whisper's av.open(..., metadata_errors=...) call.
-av>=14.0.0
+# faster-whisper 1.2.x passes metadata_errors to av.open; keep the PyAV API compatible.
+av>=14.0.0,<16.0.0
