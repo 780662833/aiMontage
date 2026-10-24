@@ -132,3 +132,23 @@ python scripts/run_openmontage_video_analyzer.py --video ".\\a.mp4" --out ".\\ar
 `video_analyzer` 中的场景描述字段可能为空，这是预期行为：工具负责结构化提取，语义解释仍需查看关键帧并进行证据化复核。脚本返回 `review_required` 时不要把结果直接当成可渲染 Blueprint。
 
 注意：本入口已提交到仓库，但尚未在用户的 Windows 环境中执行验收。首次运行若失败，先看终端中 OpenMontage 子模块路径和依赖错误；不要通过复制上游源码来绕过问题。
+
+
+## OpenMontage scene candidates → L2 event draft
+
+After `scripts/run_openmontage_video_analyzer.py` has produced its official brief and
+run manifest, create a reviewable event draft:
+
+```powershell
+python scripts/build_openmontage_event_draft.py `
+  --brief artifacts/openmontage_video_analysis/video_analysis_brief.json `
+  --manifest artifacts/openmontage_video_analysis/analysis_run_manifest.json `
+  --out artifacts/openmontage_video_analysis/l2_event_draft.json
+```
+
+The adapter preserves each upstream scene description and interval as a *candidate*,
+adds a JSON-pointer evidence reference, and leaves verified timing/frame fields null.
+It intentionally reports zero verified events and `ready_for_blueprint=false`.
+Reviewers must confirm the actual visible action and timing against the source video;
+the draft is not, by itself, approval to render. OpenMontage's official brief is not
+modified.
