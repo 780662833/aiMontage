@@ -15,6 +15,7 @@ TOOL_MODULES = {
     "transcript_fetcher": "tools.analysis.transcript_fetcher:TranscriptFetcher",
     "transcriber": "tools.analysis.transcriber:Transcriber",
     "video_analyzer": "tools.analysis.video_analyzer:VideoAnalyzer",
+    "video_compose": "tools.video.video_compose:VideoCompose",
 }
 
 
