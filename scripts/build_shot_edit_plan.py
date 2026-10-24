@@ -175,7 +175,7 @@ def main() -> int:
     args = parser.parse_args()
     result = build_shot_edit_plan(read_json(args.semantic_review))
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"schema_version": SCHEMA, "out": str(args.out), **result["validation"]},
                      ensure_ascii=False, indent=2))
     return 0
