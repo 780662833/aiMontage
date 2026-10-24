@@ -1,0 +1,31 @@
+{
+  "schema_version": "aimontage.story_truth.v1",
+  "source": "user-provided narrative; not visual verification",
+  "source_sha256": "c47cb72f6673402dbceec272530e7af8566db88c4f3905bb0d96046c4f297235",
+  "beats": [
+    {
+      "id": "E01",
+      "label": "男方引导女方做动作",
+      "narrative_role": "setup",
+      "summary": "男方先引导女方做出与香蕉有关的动作；具体动作与时间边界待原视频核验。"
+    },
+    {
+      "id": "E02",
+      "label": "男方趁机偷吃香蕉",
+      "narrative_role": "first_comedic_beat",
+      "summary": "在前一动作之后，男方趁机咬/吃香蕉；需要核验嘴部接触、香蕉状态和动作连续性。"
+    },
+    {
+      "id": "E03",
+      "label": "女方反向要求男方模仿",
+      "narrative_role": "reversal_setup",
+      "summary": "女方随后反过来要求男方做同样的动作，形成角色位置与动作意图的反转。"
+    },
+    {
+      "id": "E04",
+      "label": "女方扇男方一巴掌",
+      "narrative_role": "punchline",
+      "summary": "女方最后扇男方一巴掌作为结尾笑点；必须以接触瞬间和男方反应的视觉证据确认。"
+    }
+  ]
+}
