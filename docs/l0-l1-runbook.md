@@ -109,3 +109,26 @@ Start-Process (Resolve-Path ".\\artifacts\\real_video_e2e\\chronological_contact
 - 光流强度不等于物体速度或运动方向；摄像机运动、剪辑、闪光、压缩噪声也可能成为候选。
 - 0.25 秒抽样可能漏掉更短动作。发现关键事件时应回到源视频补充帧或逐帧检查。
 - 不要在 L2 之前把候选区间直接写成已确认剧情。
+
+## 快速复用 OpenMontage 原生视频分析（推荐下一步）
+
+在 L0/L1 证据工具之外，aiMontage 增加了一个薄适配入口，直接调用固定提交中的
+`tools.analysis.video_analyzer.VideoAnalyzer`。不复制上游代码，不改写官方
+`video_analysis_brief` 字段；aiMontage 只另外生成运行清单并检查必要结构。
+
+先确保子模块已初始化，然后在仓库根目录运行：
+
+```powershell
+Set-Location "F:\\python\\aiMontage"
+$env:PYTHONPATH = (Join-Path (Get-Location).Path "src")
+python scripts/run_openmontage_video_analyzer.py --video ".\\a.mp4" --out ".\\artifacts\\openmontage_video_analysis" --repo-root ".\\vendor\\OpenMontage" --depth standard --max-keyframes 20
+```
+
+输出：
+- `artifacts/openmontage_video_analysis/video_analysis_brief.json`：OpenMontage 原生分析结果，保持上游字段。
+- `artifacts/openmontage_video_analysis/analysis_run_manifest.json`：源视频 SHA-256、上游固定版本、场景/关键帧数量、工具步骤和结构校验状态。
+
+`--depth standard` 先作为快速基线；确认效果后再用 `--depth deep` 增加场景内采样。
+`video_analyzer` 中的场景描述字段可能为空，这是预期行为：工具负责结构化提取，语义解释仍需查看关键帧并进行证据化复核。脚本返回 `review_required` 时不要把结果直接当成可渲染 Blueprint。
+
+注意：本入口已提交到仓库，但尚未在用户的 Windows 环境中执行验收。首次运行若失败，先看终端中 OpenMontage 子模块路径和依赖错误；不要通过复制上游源码来绕过问题。
