@@ -116,7 +116,7 @@ def main() -> int:
     args = parser.parse_args()
     result = build_review_template(read_json(args.evidence_packet))
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    args.out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"schema_version": SCHEMA, "out": str(args.out), **result["validation"]},
                      ensure_ascii=False, indent=2))
     return 0
