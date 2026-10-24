@@ -23,7 +23,7 @@ def plan_for(source: Path) -> dict:
         "output_spec": {"aspect_ratio": "9:16", "resolution": {"width": 1080, "height": 1920}},
         "shots": [{
             "shot_id": "SHOT-001",
-            "source_range": {"in_seconds": 0.0, "out_seconds": 2.0},
+            "source_range": {"in_seconds": 0.0, "out_seconds": 2.0, "timing_status": "playback_confirmed"},
             "edit_decision": {"production_method": "reuse + trim"},
             "qa": {
                 "timing_confirmed": True,
@@ -59,6 +59,14 @@ def test_render_blocked_until_every_qa_gate_is_approved(tmp_path: Path):
     with pytest.raises(ValueError, match="QA gates"):
         renderer.build_compose_inputs(plan, source, tmp_path / "out.mp4")
 
+
+
+def test_render_blocked_when_source_timing_is_still_a_candidate(tmp_path: Path):
+    source = source_file(tmp_path)
+    plan = plan_for(source)
+    plan["shots"][0]["source_range"]["timing_status"] = "candidate_only_requires_playback_confirmation"
+    with pytest.raises(ValueError, match="playback-confirmed"):
+        renderer.build_compose_inputs(plan, source, tmp_path / "out.mp4")
 
 def test_builds_pinned_composer_payload_for_approved_plan(tmp_path: Path):
     source = source_file(tmp_path)
