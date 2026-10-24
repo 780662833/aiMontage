@@ -1,0 +1,247 @@
+{
+  "schema_version": "aimontage.shot_edit_plan.v1",
+  "source": {
+    "sha256": "c47cb72f6673402dbceec272530e7af8566db88c4f3905bb0d96046c4f297235",
+    "path": "a.mp4",
+    "duration_seconds": 12.373991
+  },
+  "output_spec": {
+    "aspect_ratio": "9:16",
+    "resolution": {
+      "width": 1080,
+      "height": 1920
+    },
+    "fps": 30,
+    "target_duration_seconds": 12.374,
+    "target_duration_policy": "candidate intervals sum; final in/out must be confirmed by playback",
+    "audio_policy": "retain source music only after loudness and clipping QA; do not invent voiceover"
+  },
+  "shots": [
+    {
+      "shot_id": "SHOT-001",
+      "source_event_id": "OM-SCENE-001",
+      "source_range": {
+        "in_seconds": 0,
+        "out_seconds": 5.3,
+        "duration_seconds": 5.3,
+        "timing_status": "candidate_only_requires_playback_confirmation"
+      },
+      "story": {
+        "function": "Setup and first payoff: establish the banana, show the woman offering it, then preserve the man's bite and immediate reaction.",
+        "visible_entities": [
+          "Blonde curly-haired woman wearing a white shirt with small red hearts",
+          "Dark curly-haired bearded man wearing glasses and a blue hoodie",
+          "Partly peeled banana"
+        ],
+        "observable_actions": [
+          "The woman holds up a peeled banana while the man stands beside her and touches her shoulder briefly",
+          "The man gives a thumbs-up while the woman raises and presents the banana toward him",
+          "The woman holds the banana in front of the man; he leans forward and bites the exposed banana around 4.2 seconds",
+          "After the bite, the man looks down at the banana with widened eyes and a changed facial expression"
+        ],
+        "before_state": "The woman is holding a mostly intact peeled banana; both characters appear relaxed and smiling.",
+        "after_state": "The banana has a visible bite taken from its tip; the man is looking down at it with a more uncertain/surprised expression while the woman remains pleased.",
+        "cause_and_reaction": "The visible sequence places the man's bite immediately before his changed facial expression; the exact reason for the reaction is not visually established.",
+        "must_preserve": [
+          "The banana remains the central prop",
+          "The man's thumbs-up before accepting the banana",
+          "The woman presenting the banana directly to him",
+          "The bite around 4.0–4.3 seconds and the immediate reaction",
+          "Keep the woman's pleased expression contrasted with the man's changed expression"
+        ],
+        "uncertainty": [
+          "The man's internal reason for the reaction cannot be determined from still frames alone",
+          "Exact bite onset and end must be confirmed by source playback"
+        ],
+        "confidence": 0.91,
+        "evidence_sample_indices": [
+          0,
+          1,
+          4,
+          7,
+          13,
+          17,
+          19,
+          21
+        ]
+      },
+      "edit_decision": {
+        "source_use": "reuse original source segment; confirm exact in/out by playback",
+        "production_method": "reuse + trim; preserve source composition; no regeneration proposed",
+        "composition_9_16": "source already 9:16 (576x1024); scale to 1080x1920 only after visual quality check; keep both faces and banana within safe area",
+        "transition_in": "hard cut at opening",
+        "transition_out": "hard cut at confirmed source boundary",
+        "audio": "retain source background music pending loudness/clipping QA; no voiceover detected in prior local inspection",
+        "subtitle": "none until an approved script exists; do not invent dialogue"
+      },
+      "qa": {
+        "timing_confirmed": false,
+        "story_function_preserved": false,
+        "visual_continuity_passed": false,
+        "audio_checked": false,
+        "human_review_required": true
+      },
+      "output_range": {
+        "start_seconds": 0,
+        "end_seconds": 5.3
+      }
+    },
+    {
+      "shot_id": "SHOT-002",
+      "source_event_id": "OM-SCENE-002",
+      "source_range": {
+        "in_seconds": 5.3,
+        "out_seconds": 7.4,
+        "duration_seconds": 2.1,
+        "timing_status": "candidate_only_requires_playback_confirmation"
+      },
+      "story": {
+        "function": "Reaction hold: let the audience read the man's face after the bite before returning to the wider two-character shot.",
+        "visible_entities": [
+          "Man with glasses and a blue hoodie",
+          "Bitten peeled banana held in the foreground by the woman"
+        ],
+        "observable_actions": [
+          "The view cuts to a tight close-up of the man's face with the banana in the lower foreground",
+          "The man's eyes shift toward the banana; his eyebrows and mouth change subtly, and he continues looking at it across several samples"
+        ],
+        "before_state": "The man has just bitten the banana; the woman is still holding it near him.",
+        "after_state": "The man continues to study the bitten banana with a visibly uncertain or surprised expression.",
+        "cause_and_reaction": "This close-up visually extends the reaction following the bite; no specific taste, illness, disgust, or other cause is directly observable.",
+        "must_preserve": [
+          "Tight facial close-up",
+          "Banana remains visible in the foreground",
+          "The sequence of eye movement and changing expression",
+          "Do not replace the reaction with an invented dialogue or unsupported motive"
+        ],
+        "uncertainty": [
+          "The expression could suggest uncertainty or surprise, but its precise emotional meaning is not certain from stills",
+          "Exact close-up start/end and any micro-action need source playback"
+        ],
+        "confidence": 0.84,
+        "evidence_sample_indices": [
+          22,
+          24,
+          26,
+          28,
+          29
+        ]
+      },
+      "edit_decision": {
+        "source_use": "reuse original source segment; confirm exact in/out by playback",
+        "production_method": "reuse + trim; preserve source composition; no regeneration proposed",
+        "composition_9_16": "source already 9:16 (576x1024); scale to 1080x1920 only after visual quality check; keep both faces and banana within safe area",
+        "transition_in": "hard cut at confirmed source boundary",
+        "transition_out": "hard cut at confirmed source boundary",
+        "audio": "retain source background music pending loudness/clipping QA; no voiceover detected in prior local inspection",
+        "subtitle": "none until an approved script exists; do not invent dialogue"
+      },
+      "qa": {
+        "timing_confirmed": false,
+        "story_function_preserved": false,
+        "visual_continuity_passed": false,
+        "audio_checked": false,
+        "human_review_required": true
+      },
+      "output_range": {
+        "start_seconds": 5.3,
+        "end_seconds": 7.4
+      }
+    },
+    {
+      "shot_id": "SHOT-003",
+      "source_event_id": "OM-SCENE-003",
+      "source_range": {
+        "in_seconds": 7.4,
+        "out_seconds": 12.373991,
+        "duration_seconds": 4.974,
+        "timing_status": "candidate_only_requires_playback_confirmation"
+      },
+      "story": {
+        "function": "Closing gesture and physical-comedy beat; preserve the banana as a persistent prop and the final recoil/exit rather than ending on the earlier close-up.",
+        "visible_entities": [
+          "Blonde curly-haired woman in a white heart-print shirt",
+          "Man with glasses and a blue hoodie",
+          "Bitten banana resting on the countertop"
+        ],
+        "observable_actions": [
+          "The woman lowers the bitten banana onto the countertop around 7.7–8.0 seconds",
+          "The woman raises and waves/extends one hand while the man watches her and then makes a similar forward arm gesture",
+          "Both characters hold their arms extended toward the foreground for several beats",
+          "Around 11.7 seconds, the woman's arm crosses the man's face and his head/upper body recoils sharply",
+          "At the final sample, the woman is moving out of frame to the left while the bitten banana remains on the counter"
+        ],
+        "before_state": "The woman is still holding the bitten banana; the man remains focused on her and the banana.",
+        "after_state": "The bitten banana is left on the counter; the man has recoiled and the woman moves leftward out of the frame.",
+        "cause_and_reaction": "The sampled images show an arm crossing the man's face followed by a strong recoil. They do not conclusively establish whether this is a deliberate slap, playful contact, or a motion/animation artifact.",
+        "must_preserve": [
+          "The woman places the bitten banana on the counter and it stays there through the ending",
+          "The characters' reciprocal arm gestures before the final recoil",
+          "The arm crossing the man's face and his immediate recoil as a visual beat, subject to playback verification",
+          "The final image of the woman leaving frame while the banana remains on the counter"
+        ],
+        "uncertainty": [
+          "Do not label the contact definitively as a slap until the original video is played at normal speed and frame-by-frame",
+          "The purpose of the reciprocal arm gestures is unclear from stills",
+          "No dialogue or spoken explanation is evidenced by the contact sheet"
+        ],
+        "confidence": 0.73,
+        "evidence_sample_indices": [
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48
+        ]
+      },
+      "edit_decision": {
+        "source_use": "reuse original source segment; confirm exact in/out by playback",
+        "production_method": "reuse + trim; preserve source composition; no regeneration proposed",
+        "composition_9_16": "source already 9:16 (576x1024); scale to 1080x1920 only after visual quality check; keep both faces and banana within safe area",
+        "transition_in": "hard cut at confirmed source boundary",
+        "transition_out": "end on banana remaining on counter; verify no premature cut",
+        "audio": "retain source background music pending loudness/clipping QA; no voiceover detected in prior local inspection",
+        "subtitle": "none until an approved script exists; do not invent dialogue"
+      },
+      "qa": {
+        "timing_confirmed": false,
+        "story_function_preserved": false,
+        "visual_continuity_passed": false,
+        "audio_checked": false,
+        "human_review_required": true
+      },
+      "output_range": {
+        "start_seconds": 7.4,
+        "end_seconds": 12.374
+      }
+    }
+  ],
+  "validation": {
+    "shot_count": 3,
+    "all_semantic_reviews_accepted": true,
+    "all_shots_require_timing_and_qa_confirmation": true,
+    "ready_for_render": false,
+    "blocking_gates": [
+      "Confirm source in/out points by playback, especially bite around 4.0-4.8s",
+      "Confirm the apparent arm-to-face contact around 11.7s before describing it as a slap",
+      "Confirm 9:16 upscale quality and safe framing of faces/banana",
+      "Measure audio loudness and clipping; inspect original background music",
+      "Check continuity and ending; confirm no unsupported subtitles/dialogue",
+      "Complete human content review"
+    ]
+  }
+}
