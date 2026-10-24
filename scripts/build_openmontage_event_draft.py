@@ -44,6 +44,7 @@ def build_event_draft(brief: dict[str, Any], manifest: dict[str, Any]) -> dict[s
         raise ValueError("OpenMontage brief source.duration_seconds must be positive")
 
     events = []
+    duration_warnings: list[str] = []
     for i, scene in enumerate(scenes):
         if not isinstance(scene, dict):
             raise ValueError(f"scene[{i}] must be an object")
@@ -51,8 +52,18 @@ def build_event_draft(brief: dict[str, Any], manifest: dict[str, Any]) -> dict[s
         end = scene.get("end_time")
         if not isinstance(start, (int, float)) or not isinstance(end, (int, float)):
             raise ValueError(f"scene[{i}] requires numeric start_time and end_time")
-        if start < 0 or end <= start or end > duration + 1e-6:
-            raise ValueError(f"scene[{i}] has an invalid interval")
+        if start < 0 or end <= start:
+            raise ValueError(
+                f"scene[{i}] has an invalid interval: start_time={start!r}, "
+                f"end_time={end!r}"
+            )
+        # Upstream scene boundaries and the brief's declared source duration can
+        # disagree. Preserve internally valid boundaries as unverified candidates,
+        # but surface the mismatch instead of silently discarding the scene.
+        if end > duration + 1e-6:
+            duration_warnings.append(
+                f"scene[{i}] end_time ({end}) exceeds source.duration_seconds ({duration})"
+            )
         description = scene.get("description")
         events.append({
             "event_id": f"OM-SCENE-{i + 1:03d}",
@@ -104,12 +115,14 @@ def build_event_draft(brief: dict[str, Any], manifest: dict[str, Any]) -> dict[s
         "events": events,
         "global_motion_candidates": [],
         "validation": {
+            "warnings": duration_warnings,
             "event_count": len(events),
             "verified_event_count": 0,
             "events_requiring_review": len(events),
             "motion_candidate_count": 0,
             "ready_for_blueprint": False,
-            "reason": "Upstream scene candidates are not reviewed semantic events; verify timing and visible actions before Blueprint production use.",
+            "reason": "Upstream scene candidates are not reviewed semantic events; verify timing and visible actions before Blueprint production use."
+            + (" Source-duration mismatch detected; inspect validation.warnings." if duration_warnings else ""),
         },
         "upstream": {
             "tool": manifest.get("upstream", {}).get("tool"),
