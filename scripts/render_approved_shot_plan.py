@@ -79,6 +79,12 @@ def build_compose_inputs(
         start, end = source_range.get("in_seconds"), source_range.get("out_seconds")
         if not isinstance(start, (int, float)) or not isinstance(end, (int, float)) or start < 0 or end <= start:
             raise ValueError(f"{shot.get('shot_id', index)}: invalid source in/out range")
+        duration = source.get("duration_seconds")
+        if isinstance(duration, (int, float)) and end > duration + 0.001:
+            raise ValueError(f"{shot.get('shot_id', index)}: source range exceeds source duration")
+        timing_status = source_range.get("timing_status")
+        if timing_status not in {"playback_confirmed", "confirmed"}:
+            raise ValueError(f"{shot.get('shot_id', index)}: source timing must be playback-confirmed")
         if start < previous_end - 0.001:
             raise ValueError("Shot source ranges overlap or are out of chronological order")
         previous_end = float(end)
