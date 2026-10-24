@@ -51,3 +51,16 @@ def test_rejects_invalid_source_manifest():
     manifest["source"]["sha256"] = ""
     with pytest.raises(ValueError, match="source.sha256"):
         build_event_draft(brief, manifest)
+
+
+
+def test_preserves_valid_scene_interval_when_brief_duration_disagrees():
+    brief, manifest = fixtures()
+    brief["structure_analysis"]["scenes"][1]["end_time"] = 4.5
+
+    result = build_event_draft(brief, manifest)
+
+    assert result["events"][1]["candidate_intervals"][0]["end_seconds"] == 4.5
+    assert result["events"][1]["end_seconds"] is None
+    assert result["validation"]["ready_for_blueprint"] is False
+    assert any("scene[1] end_time (4.5)" in warning for warning in result["validation"]["warnings"])
