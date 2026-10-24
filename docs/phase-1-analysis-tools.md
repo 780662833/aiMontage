@@ -182,3 +182,6 @@ python scripts/analyze_motion_dense_frames.py `
   --evidence artifacts/real_video_e2e/dense_frames/dense_frame_evidence.json `
   --out artifacts/real_video_e2e/dense_frames/motion_dense_review.json
 ```
+
+
+The pipeline also emits `dense_frames/motion_review_sheet.html`, a portable contact sheet that embeds the start/end images for each flagged interval. Reviewers can classify likely action motion versus camera movement, cuts/flashes, compression noise, or unclear intervals and record notes. The sheet is a review aid, not a machine-generated approval. It is included in the `aimontage-real-video-e2e` workflow artifact.
