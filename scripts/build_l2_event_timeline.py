@@ -68,19 +68,19 @@ def build(story_path: Path, evidence_path: Path, motion_path: Path | None) -> di
             ],
         })
 
-    # Attach motion intervals as review leads only; never infer which semantic event they prove.
-    for event in events:
-        event["candidate_intervals"] = [
-            {
-                "start_seconds": item.get("start_seconds"),
-                "end_seconds": item.get("end_seconds"),
-                "start_sample_index": item.get("start_sample_index"),
-                "end_sample_index": item.get("end_sample_index"),
-                "mean_flow_magnitude_px": item.get("mean_flow_magnitude_px"),
-                "status": "motion_candidate_not_semantic_proof",
-            }
-            for item in intervals if item.get("motion_candidate")
-        ]
+    # Keep motion candidates global: without visual review, assigning them to a
+    # semantic beat would imply a relationship that the evidence has not established.
+    motion_candidates = [
+        {
+            "start_seconds": item.get("start_seconds"),
+            "end_seconds": item.get("end_seconds"),
+            "start_sample_index": item.get("start_sample_index"),
+            "end_sample_index": item.get("end_sample_index"),
+            "mean_flow_magnitude_px": item.get("mean_flow_magnitude_px"),
+            "status": "motion_candidate_not_semantic_proof",
+        }
+        for item in intervals if item.get("motion_candidate")
+    ]
 
     return {
         "schema_version": SCHEMA,
@@ -99,11 +99,12 @@ def build(story_path: Path, evidence_path: Path, motion_path: Path | None) -> di
             "unknown_timing": "represented as null; never fabricated",
         },
         "events": events,
+        "global_motion_candidates": motion_candidates,
         "validation": {
             "event_count": len(events),
             "verified_event_count": 0,
             "events_requiring_review": len(events),
-            "motion_candidate_count": sum(1 for item in intervals if item.get("motion_candidate")),
+            "motion_candidate_count": len(motion_candidates),
             "ready_for_blueprint": False,
             "reason": "Blueprint generation is gated until event timing and visual evidence are reviewed.",
         },
