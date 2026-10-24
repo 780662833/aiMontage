@@ -18,7 +18,11 @@ def build(evidence_path: Path, motion_path: Path, out_path: Path) -> dict[str, A
     by_index = {int(s["sample_index"]): s for s in evidence.get("samples", [])}
     candidates = sorted(
         (x for x in motion.get("intervals", []) if x.get("motion_candidate")),
-        key=lambda x: float(x.get("mean_flow_magnitude_px", 0)), reverse=True,
+        key=lambda x: (
+            float(x.get("start_seconds", 0)),
+            float(x.get("end_seconds", 0)),
+            int(x.get("start_sample_index", 0)),
+        ),
     )
     cards = []
     for item in candidates:
