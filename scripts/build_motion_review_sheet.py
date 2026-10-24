@@ -18,7 +18,11 @@ def build(evidence_path: Path, motion_path: Path, out_path: Path) -> dict[str, A
     by_index = {int(s["sample_index"]): s for s in evidence.get("samples", [])}
     candidates = sorted(
         (x for x in motion.get("intervals", []) if x.get("motion_candidate")),
-        key=lambda x: float(x.get("mean_flow_magnitude_px", 0)), reverse=True,
+        key=lambda x: (
+            float(x.get("start_seconds", 0)),
+            float(x.get("end_seconds", 0)),
+            int(x.get("start_sample_index", 0)),
+        ),
     )
     cards = []
     for item in candidates:
@@ -37,14 +41,14 @@ def build(evidence_path: Path, motion_path: Path, out_path: Path) -> dict[str, A
             image_html.append(
                 f'<figure><img alt="{label} sample at {float(sample["source_pts_time"]):.3f}s" '
                 f'src="data:{mime};base64,{encoded}"><figcaption>{label}: '
-                f'{float(sample["source_pts_time"]):.3f}s · frame {int(sample["frame_no"])}</figcaption></figure>'
+                f'{float(sample["source_pts_time"]):.3f}s 路 frame {int(sample["frame_no"])}</figcaption></figure>'
             )
         start, end = float(item["start_seconds"]), float(item["end_seconds"])
         cards.append(f"""
 <section class="card">
-  <header><strong>{start:.3f}s – {end:.3f}s</strong><span>mean flow {float(item['mean_flow_magnitude_px']):.2f}px · p90 {float(item['p90_flow_magnitude_px']):.2f}px</span></header>
+  <header><strong>{start:.3f}s 鈥?{end:.3f}s</strong><span>mean flow {float(item['mean_flow_magnitude_px']):.2f}px 路 p90 {float(item['p90_flow_magnitude_px']):.2f}px</span></header>
   <div class="images">{''.join(image_html)}</div>
-  <p class="review">Reviewer classification: ☐ action motion ☐ camera motion ☐ cut/flash ☐ compression/noise ☐ unclear</p>
+  <p class="review">Reviewer classification: 鈽?action motion 鈽?camera motion 鈽?cut/flash 鈽?compression/noise 鈽?unclear</p>
   <p class="review">Action completeness / notes: ______________________________________________</p>
 </section>""")
     document = f"""<!doctype html>
@@ -82,3 +86,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
