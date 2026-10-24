@@ -69,7 +69,7 @@ def test_rejects_source_hash_mismatch():
 def test_rejects_sample_hash_mismatch():
     event_draft, dense, _ = fixtures()
     dense["samples"][0]["source_sha256"] = "different"
-    with pytest.raises(ValueError, match="sample 2 source SHA-256"):
+    with pytest.raises(ValueError, match="Sample 2 source SHA-256"):
         build_packet(event_draft, dense)
 
 
