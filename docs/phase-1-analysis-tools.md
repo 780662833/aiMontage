@@ -15,6 +15,16 @@
 - Timestamp/frame association audit must report `aligned`, `ambiguous-neighbor`, or `reorder`; suspicious ordering must not be silently corrected.
 - Keep raw tool output alongside normalized aiMontage records.
 
+## Dense frame evidence for motion review
+
+`scripts/run_dense_frame_sampling.py` creates a separate `aimontage.dense_frame_evidence.v1` bundle using deterministic uniform sampling (default 0.25 seconds). Each extracted image is associated with the immutable source SHA-256, decoded frame number, authoritative source PTS, relative path, and image SHA-256. The Phase 1 CI runs this against the real `a.mp4` fixture and uploads the bundle with the other artifacts.
+
+Dense uniform sampling improves temporal coverage compared with 1-second sampling, but it is not optical-flow analysis and does not guarantee capture of every brief action. Treat the bundle as additional evidence for human review, not a complete action timeline or a motion detector.
+
+```powershell
+python scripts/run_dense_frame_sampling.py --video a.mp4 --out artifacts/dense_frames --interval-seconds 0.25
+```
+
 ## Real-video analysis
 The root `a.mp4` fixture is processed by `scripts/run_real_video_e2e.py`. It runs pinned upstream `audio_probe`, `scene_detect`, and `frame_sampler`, audits decoded source-frame PTS, maps scene boundaries to contiguous half-open source-frame intervals, and maps each sampled image to its source frame. Each normalized sample includes source SHA-256, source frame number, authoritative source PTS, relative POSIX path, image SHA-256, and mapping delta. Raw upstream output is preserved in parallel.
 
@@ -137,7 +147,7 @@ The current CI fixture contains sparse one-second image samples. Passing these g
 
 ## Editor-approved shot assembly renderer (MVP)
 
-`scripts/render_edit_plan.py` now assembles actual source intervals in plan order and concatenates them with hard cuts. It preserves the source audio as a continuous track trimmed to the assembled video duration. This is genuine shot-level editing (trim + order + concatenate), but it does not generate new actions, synthesize camera viewpoints, implement crop/reframing, or burn subtitles. The renderer refuses aspect-ratio conversion, non-cut transitions, crop instructions, and enabled subtitles rather than silently ignoring them.
+`scripts/render_edit_plan.py` now assembles actual source intervals in plan order and concatenates them with hard cuts. When source audio is enabled, it cuts the corresponding audio interval for each shot and concatenates those intervals in the same order as the video, avoiding an audio/video mismatch when shots are reordered. This is genuine shot-level editing (trim + order + concatenate), but it does not generate new actions, synthesize camera viewpoints, implement crop/reframing, or burn subtitles. The renderer refuses aspect-ratio conversion, non-cut transitions, crop instructions, and enabled subtitles rather than silently ignoring them. A synthetic FFmpeg integration test exercises two source intervals assembled in reverse chronological order and verifies that the output retains audio and records the per-shot audio policy.
 
 The renderer is deliberately **not added as an automatically approved production step in CI**. The generated `shot_edit_plan.json` remains a draft. After a human has reviewed the exact source and every shot, make an explicit reviewed copy of the plan and set:
 - top-level `acceptance.editor_approved: true`;
@@ -160,3 +170,15 @@ python scripts/render_edit_plan.py `
 
 Review the output in a media player and inspect all three JSON reports. The automated QA is technical; content QA remains a review-candidate list. The report's `creative_reconstruction_claimed` remains false because this renderer assembles existing source shots and does not recreate missing actions.
 
+
+
+### Motion-dense review prioritization
+
+The CI now runs `scripts/analyze_motion_dense_frames.py` against the 0.25-second, timestamp-linked frame bundle. It computes Farneback optical-flow magnitude between adjacent samples and emits `motion_dense_review.json` with ranked review intervals. This is a **review-prioritization signal**, not a semantic action detector: camera movement, cuts, flashes, and compression artifacts can score highly, and very brief actions can still fall between uniform samples. Inspect flagged intervals in source context; do not treat the score or CI success as human approval or proof of complete action coverage.
+
+Reproduce locally after the dense sampler:
+```powershell
+python scripts/analyze_motion_dense_frames.py `
+  --evidence artifacts/real_video_e2e/dense_frames/dense_frame_evidence.json `
+  --out artifacts/real_video_e2e/dense_frames/motion_dense_review.json
+```

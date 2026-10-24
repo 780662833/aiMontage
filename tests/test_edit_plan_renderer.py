@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from aimontage.edit_plan_renderer import validate_approved_edit_plan
+from aimontage.edit_plan_renderer import _validate_frame_time_alignment, validate_approved_edit_plan
 from aimontage.ffmpeg_renderer import RenderError
 
 
@@ -79,11 +79,19 @@ def test_approved_plan_renders_real_trim_with_ffmpeg(tmp_path: Path):
         editor_approved=True, render_approved=True, reviewer="integration-test"
     )
     plan["source"]["sha256"] = __import__("hashlib").sha256(source.read_bytes()).hexdigest()
-    plan["shots"][0].update(order=0, review_status="APPROVED")
-    plan["shots"][0]["source"].update(
-        start_frame_no=5, end_frame_no_exclusive=15, start_seconds=0.5, end_seconds=1.5
+    first = plan["shots"][0]
+    first.update(order=0, review_status="APPROVED", shot_id="SHOT-LATE")
+    first["source"].update(
+        start_frame_no=10, end_frame_no_exclusive=15, start_seconds=1.0, end_seconds=1.5
     )
-    plan["shots"][0]["target"].update(start_frame_no=0, end_frame_no_exclusive=10)
+    first["target"].update(start_frame_no=0, end_frame_no_exclusive=5)
+    second = json.loads(json.dumps(first))
+    second.update(order=1, shot_id="SHOT-EARLY")
+    second["source"].update(
+        start_frame_no=0, end_frame_no_exclusive=5, start_seconds=0.0, end_seconds=0.5
+    )
+    second["target"].update(start_frame_no=5, end_frame_no_exclusive=10)
+    plan["shots"] = [first, second]
     output = tmp_path / "assembled.mp4"
     report = render_approved_edit_plan(source, output, plan)
 
@@ -95,4 +103,26 @@ def test_approved_plan_renders_real_trim_with_ffmpeg(tmp_path: Path):
     assert any(s.get("codec_type") == "video" for s in streams)
     assert any(s.get("codec_type") == "audio" for s in streams)
     assert report["edit_plan"]["reviewer"] == "integration-test"
+    assert report["audio_policy"] == "source_audio_cut_and_concatenated_per_shot"
+    assert [shot["shot_id"] for shot in report["shots"]] == ["SHOT-LATE", "SHOT-EARLY"]
 
+
+
+
+def test_frame_time_alignment_rejects_seconds_frame_mismatch():
+    plan = _plan()["shots"]
+    plan[0]["source"]["start_seconds"] = 0.2
+    with pytest.raises(RenderError, match="does not align"):
+        _validate_frame_time_alignment(plan, [i / 30 for i in range(90)])
+
+
+def test_frame_time_alignment_accepts_half_open_boundaries():
+    shot = _plan()["shots"][0]
+    _validate_frame_time_alignment([shot], [i / 30 for i in range(90)])
+
+
+def test_frame_time_alignment_rejects_out_of_range_end_frame():
+    shot = _plan()["shots"][0]
+    shot["source"]["end_frame_no_exclusive"] = 91
+    with pytest.raises(RenderError, match="exceeds decoded source frame count"):
+        _validate_frame_time_alignment([shot], [i / 30 for i in range(90)])

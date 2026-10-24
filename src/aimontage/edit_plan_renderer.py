@@ -1,6 +1,7 @@
 """Render an explicitly approved shot edit plan by deterministic FFmpeg assembly."""
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -56,10 +57,74 @@ def validate_approved_edit_plan(source: Path, plan: dict[str, Any]) -> list[dict
     return validated
 
 
+def _probe_frame_pts(source: Path) -> list[float]:
+    """Return decoded source-frame PTS in decoder order, matching the plan's frame numbering."""
+    result = subprocess.run(
+        [
+            "ffprobe", "-v", "error", "-select_streams", "v:0", "-show_frames",
+            "-show_entries", "frame=best_effort_timestamp_time,pts_time,pkt_pts_time",
+            "-of", "json", str(source),
+        ],
+        check=False, capture_output=True, text=True, timeout=120,
+    )
+    if result.returncode:
+        raise RenderError(f"ffprobe could not inspect source frame timestamps: {result.stderr[-2000:]}")
+    try:
+        payload = json.loads(result.stdout)
+        pts = []
+        for frame in payload.get("frames", []):
+            value = frame.get("best_effort_timestamp_time")
+            if value is None:
+                value = frame.get("pts_time")
+            if value is None:
+                value = frame.get("pkt_pts_time")
+            if value is None:
+                raise RenderError("source contains a decoded frame without a usable timestamp")
+            pts.append(float(value))
+    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        raise RenderError(f"could not parse source frame timestamps: {exc}") from exc
+    if not pts:
+        raise RenderError("source has no decoded video frames")
+    if any(right <= left for left, right in zip(pts, pts[1:])):
+        raise RenderError("source frame PTS are not strictly increasing; frame-index edit plan is unsafe")
+    return pts
+
+
+def _validate_frame_time_alignment(shots: list[dict[str, Any]], pts: list[float]) -> None:
+    """Require plan seconds to agree with decoded frame-index boundaries within one frame."""
+    for shot in shots:
+        src = shot["source"]
+        start_frame = int(src["start_frame_no"])
+        end_frame = int(src["end_frame_no_exclusive"])
+        if end_frame > len(pts):
+            raise RenderError(f"{shot.get('shot_id')} frame interval exceeds decoded source frame count")
+        start_time = float(src["start_seconds"])
+        end_time = float(src["end_seconds"])
+        start_delta = abs(start_time - pts[start_frame])
+        if start_delta > 0.05 + 1e-6:
+            raise RenderError(
+                f"{shot.get('shot_id')} start_seconds does not align with start_frame_no "
+                f"(delta={start_delta:.6f}s)"
+            )
+        # For a half-open end frame, compare against that frame's PTS; the final frame ends
+        # at the next nominal interval because no end-frame PTS exists at EOF.
+        if end_frame < len(pts):
+            end_delta = abs(end_time - pts[end_frame])
+            if end_delta > 0.05 + 1e-6:
+                raise RenderError(
+                    f"{shot.get('shot_id')} end_seconds does not align with end_frame_no_exclusive "
+                    f"(delta={end_delta:.6f}s)"
+                )
+        elif end_time + 0.05 < pts[-1]:
+            raise RenderError(f"{shot.get('shot_id')} end_seconds ends before the final source frame")
+
+
 def render_approved_edit_plan(source: Path, output: Path, plan: dict[str, Any]) -> dict[str, Any]:
-    """Cut source intervals in plan order, concatenate video, and keep source audio continuous."""
+    """Cut matching source intervals from video/audio and concatenate them in plan order."""
     shots = validate_approved_edit_plan(source, plan)
     source_probe = probe_media(source)
+    frame_pts = _probe_frame_pts(source)
+    _validate_frame_time_alignment(shots, frame_pts)
     streams = source_probe.get("streams", [])
     video = next((s for s in streams if s.get("codec_type") == "video"), None)
     if video is None:
@@ -73,30 +138,39 @@ def render_approved_edit_plan(source: Path, output: Path, plan: dict[str, Any]) 
     if abs((width / height) - (int(video["width"]) / int(video["height"]))) > 0.002:
         raise RenderError("MVP renderer refuses aspect-ratio conversion without an approved background/reframe implementation")
     filters = []
-    video_labels = []
+    concat_labels = []
     duration_total = 0.0
+    include_audio = audio_exists and plan["output"].get("audio_codec", "aac") != "none"
     for i, shot in enumerate(shots):
         start, end = float(shot["source"]["start_seconds"]), float(shot["source"]["end_seconds"])
         if end > source_duration + 0.05:
             raise RenderError(f"{shot['shot_id']} source interval exceeds media duration")
         duration_total += end - start
-        label = f"v{i}"
+        video_label = f"v{i}"
         filters.append(
             f"[0:v:0]trim=start={start:.6f}:end={end:.6f},setpts=PTS-STARTPTS,"
             f"fps={fps:g},scale={width}:{height}:flags=lanczos,"
-            f"setsar=1,format=yuv420p[{label}]"
+            f"setsar=1,format=yuv420p[{video_label}]"
         )
-        video_labels.append(f"[{label}]")
-    filters.append("".join(video_labels) + f"concat=n={len(shots)}:v=1:a=0[vout]")
-    if audio_exists:
-        filters.append(f"[0:a:0]aresample=48000,atrim=duration={duration_total:.6f},asetpts=PTS-STARTPTS[aout]")
+        concat_labels.append(f"[{video_label}]")
+        if include_audio:
+            audio_label = f"a{i}"
+            filters.append(
+                f"[0:a:0]atrim=start={start:.6f}:end={end:.6f},"
+                f"asetpts=PTS-STARTPTS,aresample=48000[{audio_label}]"
+            )
+            concat_labels.append(f"[{audio_label}]")
+    if include_audio:
+        filters.append("".join(concat_labels) + f"concat=n={len(shots)}:v=1:a=1[vout][aout]")
+    else:
+        filters.append("".join(concat_labels) + f"concat=n={len(shots)}:v=1:a=0[vout]")
     out = plan["output"]
     codec = {"h264": "libx264", "hevc": "libx265"}.get(out.get("video_codec", "h264"))
     if not codec:
         raise RenderError("unsupported video codec in edit plan")
     command = ["ffmpeg", "-hide_banner", "-y", "-v", "error", "-i", str(source),
                "-filter_complex", ";".join(filters), "-map", "[vout]"]
-    if audio_exists and out.get("audio_codec", "aac") != "none":
+    if include_audio:
         command += ["-map", "[aout]", "-c:a", "aac", "-b:a", "192k", "-ar", "48000"]
     else:
         command += ["-an"]
@@ -115,7 +189,7 @@ def render_approved_edit_plan(source: Path, output: Path, plan: dict[str, Any]) 
         "creative_reconstruction_claimed": False,
         "source": {"path": source.as_posix(), "sha256": sha256_file(source),
                    "duration_seconds": source_duration, "probe": source_probe},
-        "edit_plan": {"schema_version": plan["schema_version"], "sha256": __import__("hashlib").sha256(
+        "edit_plan": {"schema_version": plan["schema_version"], "sha256": hashlib.sha256(
             json.dumps(plan, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest(),
             "reviewer": plan["acceptance"]["reviewer"]},
         "output": {"path": output.as_posix(), "sha256": sha256_file(output), "duration_seconds": duration_total,
@@ -123,7 +197,7 @@ def render_approved_edit_plan(source: Path, output: Path, plan: dict[str, Any]) 
         "shots": [{"shot_id": s.get("shot_id"), "order": s.get("order"),
                    "source_start_seconds": s["source"]["start_seconds"],
                    "source_end_seconds": s["source"]["end_seconds"]} for s in shots],
-        "audio_policy": "continuous_source_audio_trimmed_to_assembled_video" if audio_exists else "no_source_audio",
+        "audio_policy": ("source_audio_cut_and_concatenated_per_shot" if include_audio else "audio_disabled_by_plan" if audio_exists else "no_source_audio"),
         "command": command,
         "manual_review_required": True,
     }

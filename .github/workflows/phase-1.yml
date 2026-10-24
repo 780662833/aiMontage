@@ -76,6 +76,10 @@ jobs:
           PY
       - name: Run real-video analysis and verify timestamp-linked evidence
         run: python scripts/run_real_video_e2e.py --video a.mp4 --out artifacts/real_video_e2e
+      - name: Build dense timestamp-linked frame evidence
+        run: python scripts/run_dense_frame_sampling.py --video a.mp4 --out artifacts/real_video_e2e/dense_frames --interval-seconds 0.25
+      - name: Score motion-dense review intervals from timestamp-linked samples
+        run: python scripts/analyze_motion_dense_frames.py --evidence artifacts/real_video_e2e/dense_frames/dense_frame_evidence.json --out artifacts/real_video_e2e/dense_frames/motion_dense_review.json
       - name: Build deterministic music timeline evidence
         run: python scripts/run_music_timeline_e2e.py --video a.mp4 --out artifacts/real_video_e2e/music_timeline
       - name: Build and validate cross-modal event timeline
