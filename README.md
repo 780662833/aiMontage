@@ -10,6 +10,10 @@ Independent evidence-first workflow for reference-video analysis and short-form 
 - Keep aiMontage-owned media facts, source-timestamp audit, evidence bundle, Blueprint, render orchestration, and QA gates independent.
 - Preserve the upstream official `video_analysis_brief` schema unchanged.
 
+## Architecture and local runbook
+
+See [`docs/l0-l1-runbook.md`](docs/l0-l1-runbook.md) for the L0/L1 layer boundaries, PowerShell commands, outputs, and current acceptance notes.
+
 ## Phase 1: analysis tools
 
 Integrate `audio_probe`, `scene_detect`, `frame_sampler`, and `transcript_fetcher` / `transcriber`. See [`docs/phase-1-analysis-tools.md`](docs/phase-1-analysis-tools.md).
