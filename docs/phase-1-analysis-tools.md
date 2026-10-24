@@ -170,3 +170,15 @@ python scripts/render_edit_plan.py `
 
 Review the output in a media player and inspect all three JSON reports. The automated QA is technical; content QA remains a review-candidate list. The report's `creative_reconstruction_claimed` remains false because this renderer assembles existing source shots and does not recreate missing actions.
 
+
+
+### Motion-dense review prioritization
+
+The CI now runs `scripts/analyze_motion_dense_frames.py` against the 0.25-second, timestamp-linked frame bundle. It computes Farneback optical-flow magnitude between adjacent samples and emits `motion_dense_review.json` with ranked review intervals. This is a **review-prioritization signal**, not a semantic action detector: camera movement, cuts, flashes, and compression artifacts can score highly, and very brief actions can still fall between uniform samples. Inspect flagged intervals in source context; do not treat the score or CI success as human approval or proof of complete action coverage.
+
+Reproduce locally after the dense sampler:
+```powershell
+python scripts/analyze_motion_dense_frames.py `
+  --evidence artifacts/real_video_e2e/dense_frames/dense_frame_evidence.json `
+  --out artifacts/real_video_e2e/dense_frames/motion_dense_review.json
+```
